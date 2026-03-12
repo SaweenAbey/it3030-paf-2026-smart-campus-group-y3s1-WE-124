@@ -22,6 +22,7 @@ public class AuthResponse {
     private String username;
     private String name;
     private Role role;
+    private String profileImageUrl;
     private LocalDateTime expiresAt;
     private String message;
 }

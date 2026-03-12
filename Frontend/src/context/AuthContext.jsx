@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
+import { authAPI, userAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -45,6 +45,30 @@ export const AuthProvider = ({ children }) => {
     return !!token && !!user;
   };
 
+  const updateUserProfileImage = async (imageUrl) => {
+    if (!user?.userId) return;
+    
+    const response = await userAPI.updateProfileImage(user.userId, imageUrl);
+    const updatedUser = { ...user, profileImageUrl: response.data.profileImageUrl };
+    
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    
+    return response.data;
+  };
+
+  const deleteUserProfileImage = async () => {
+    if (!user?.userId) return;
+    
+    const response = await userAPI.deleteProfileImage(user.userId);
+    const updatedUser = { ...user, profileImageUrl: null };
+    
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    
+    return response.data;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -55,6 +79,8 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         isAuthenticated,
+        updateUserProfileImage,
+        deleteUserProfileImage,
       }}
     >
       {children}

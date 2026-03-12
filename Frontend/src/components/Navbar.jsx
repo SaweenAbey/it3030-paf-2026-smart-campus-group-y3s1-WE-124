@@ -24,7 +24,7 @@ const Navbar = () => {
               toast.success('Logged out successfully');
               navigate('/login');
             }}
-            className="px-3 py-1.5 text-sm rounded-md bg-sky-600 hover:bg-sky-700 text-white transition-colors"
+            className="px-3 py-1.5 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white transition-colors"
           >
             Yes, Logout
           </button>
@@ -50,9 +50,17 @@ const Navbar = () => {
             {isAuthenticated() ? (
               <>
                 <div className="hidden sm:flex items-center gap-3 pr-3 border-r border-slate-200">
-                  <div className="w-8 h-8 rounded-lg bg-linear-to-br from-sky-900 to-sky-500 flex items-center justify-center">
-                    <span className="text-white font-medium text-xs">{user?.name?.charAt(0).toUpperCase()}</span>
-                  </div>
+                  {user?.profileImageUrl ? (
+                    <img
+                      src={user.profileImageUrl}
+                      alt={user?.name}
+                      className="w-10 h-10 rounded-2xl object-cover border-2 border-sky-200"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-lg bg-linear-to-br from-sky-900 to-sky-500 flex items-center justify-center">
+                      <span className="text-white font-medium text-xs">{user?.name?.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
                   <div className="text-sm">
                     <div className="font-medium text-sky-900">{user?.name}</div>
                     <div className="text-slate-400 text-xs">{user?.role}</div>
@@ -60,7 +68,7 @@ const Navbar = () => {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 rounded-lg text-slate-500 hover:text-sky-900 hover:bg-slate-50 transition-all text-sm font-medium"
+                  className="px-4 py-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-50 transition-all text-sm font-medium"
                 >
                   Logout
                 </button>

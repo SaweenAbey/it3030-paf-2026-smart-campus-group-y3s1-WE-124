@@ -1,7 +1,11 @@
 package com.example.fullstack_backend.dto;
 
 import com.example.fullstack_backend.model.Role;
-import jakarta.validation.constraints.*;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,4 +38,7 @@ public class RegisterRequest {
     private String confirmPassword;
 
     private Role role = Role.STUDENT;
+
+    @Size(max = 500, message = "Profile image URL cannot exceed 500 characters")
+    private String profileImageUrl;
 }

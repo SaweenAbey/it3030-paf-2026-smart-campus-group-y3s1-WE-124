@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import mediaUpload from '../utils/mediaUpload';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,8 @@ const Signup = () => {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -22,6 +25,23 @@ const Signup = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      setProfileImage(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setProfileImage(null);
+    setImagePreview(null);
   };
 
   const validateForm = () => {
@@ -45,11 +65,25 @@ const Signup = () => {
     if (!validateForm()) return;
     setLoading(true);
     try {
-      await register({ ...formData, age: formData.age ? parseInt(formData.age) : null });
+      let profileImageUrl = null;
+      
+      // Upload image to Supabase if selected
+      if (profileImage) {
+        toast.loading('Uploading profile image...');
+        profileImageUrl = await mediaUpload(profileImage);
+        toast.dismiss();
+      }
+      
+      await register({ 
+        ...formData, 
+        age: formData.age ? parseInt(formData.age) : null,
+        profileImageUrl 
+      });
       toast.success('Account created! Please sign in.');
       navigate('/login');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Registration failed');
+      toast.dismiss();
+      toast.error(error.response?.data?.message || error || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -111,6 +145,47 @@ const Signup = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Profile Photo Upload */}
+            <div className="flex flex-col items-center mb-6">
+              <label className="block text-sm font-medium text-slate-600 mb-3">
+                Profile Photo
+              </label>
+              <div className="relative">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Profile preview"
+                      className="w-24 h-24 rounded-full object-cover border-4 border-sky-200 shadow-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors shadow-md"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-24 h-24 rounded-full border-4 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-sky-400 hover:bg-sky-50 transition-all">
+                    <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span className="text-xs text-slate-400 mt-1">Add Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+              <p className="text-xs text-slate-400 mt-2">Max 5MB (JPG, PNG)</p>
+            </div>
+
             {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-2">

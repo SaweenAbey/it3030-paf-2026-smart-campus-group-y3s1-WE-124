@@ -10,6 +10,8 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -17,24 +19,97 @@ const Login = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    validateField(name, formData[name]);
+  };
+
+  const validateField = (name, value) => {
+    let error = '';
+    if (!value || value.trim() === '') {
+      error = `${name.charAt(0).toUpperCase() + name.slice(1)} is required`;
+    }
+    setErrors((prev) => ({ ...prev, [name]: error }));
+    return !error;
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    let isValid = true;
+
+    if (!formData.username || formData.username.trim() === '') {
+      newErrors.username = 'Username is required';
+      isValid = false;
+    }
+
+    if (!formData.password || formData.password.trim() === '') {
+      newErrors.password = 'Password is required';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    setTouched({ username: true, password: true });
+
+    if (!isValid) {
+      // Show toast for empty fields
+      const emptyFields = [];
+      if (newErrors.username) emptyFields.push('Username');
+      if (newErrors.password) emptyFields.push('Password');
+      toast.error(`${emptyFields.join(' and ')} ${emptyFields.length > 1 ? 'are' : 'is'} required`);
+    }
+
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.username || !formData.password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     try {
       await login(formData);
       toast.success('Welcome back!');
       navigate('/');
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Login failed');
+      // Handle different error types
+      const errorData = error.response?.data;
+      
+      if (errorData?.errors) {
+        // Validation errors from backend
+        setErrors(errorData.errors);
+        const errorMessages = Object.values(errorData.errors).join(', ');
+        toast.error(errorMessages || 'Please check your input');
+      } else if (error.response?.status === 401) {
+        // Invalid credentials
+        toast.error('Invalid username or password');
+      } else if (error.response?.status === 404) {
+        // User not found
+        toast.error('User not found. Please check your username');
+      } else {
+        // Generic error
+        toast.error(errorData?.message || 'Login failed. Please try again');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  const getInputClassName = (fieldName) => {
+    const baseClass = "w-full px-4 py-3 rounded-xl border-2 bg-white text-slate-800 placeholder-slate-400 focus:ring-4 outline-none transition-all";
+    const hasError = touched[fieldName] && errors[fieldName];
+    
+    if (hasError) {
+      return `${baseClass} border-red-400 focus:border-red-400 focus:ring-red-100`;
+    }
+    return `${baseClass} border-slate-200 focus:border-sky-400 focus:ring-sky-100`;
   };
 
   return (
@@ -104,9 +179,18 @@ const Login = () => {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 placeholder="Enter your username"
-                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
+                className={getInputClassName('username')}
               />
+              {touched.username && errors.username && (
+                <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.username}
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -120,8 +204,9 @@ const Login = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="Enter your password"
-                  className="w-full px-4 py-3 pr-12 rounded-xl border-2 border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
+                  className={`${getInputClassName('password')} pr-12`}
                 />
                 <button
                   type="button"
@@ -140,6 +225,14 @@ const Login = () => {
                   )}
                 </button>
               </div>
+              {touched.password && errors.password && (
+                <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {errors.password}
+                </p>
+              )}
             </div>
 
             {/* Submit Button */}

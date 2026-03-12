@@ -49,6 +49,9 @@ export const userAPI = {
   getProfile: (id) => api.get(`/users/${id}`),
   updateProfile: (id, data) => api.put(`/users/${id}`, data),
   getAllUsers: () => api.get('/users'),
+  getCurrentUser: () => api.get('/users/me'),
+  updateProfileImage: (id, profileImageUrl) => api.patch(`/users/${id}/image`, { profileImageUrl }),
+  deleteProfileImage: (id) => api.delete(`/users/${id}/image`),
 };
 
 export default api;
