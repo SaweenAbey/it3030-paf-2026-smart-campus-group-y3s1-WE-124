@@ -1,0 +1,27 @@
+package com.example.fullstack_backend.dto;
+
+import java.time.LocalDateTime;
+
+import com.example.fullstack_backend.model.Role;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AuthResponse {
+
+    private String token;
+    @Builder.Default
+    private String tokenType = "Bearer";
+    private Long userId;
+    private String username;
+    private String name;
+    private Role role;
+    private LocalDateTime expiresAt;
+    private String message;
+}
