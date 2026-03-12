@@ -1,10 +1,8 @@
 package com.example.fullstack_backend.controller;
 
-import com.example.fullstack_backend.dto.RegisterRequest;
-import com.example.fullstack_backend.dto.UserResponse;
-import com.example.fullstack_backend.model.Role;
-import com.example.fullstack_backend.service.UserService;
-import jakarta.validation.Valid;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,10 +10,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import com.example.fullstack_backend.dto.RegisterRequest;
+import com.example.fullstack_backend.dto.UserResponse;
+import com.example.fullstack_backend.model.Role;
+import com.example.fullstack_backend.service.UserService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/users")
@@ -94,5 +105,23 @@ public class UserController {
     public ResponseEntity<List<UserResponse>> searchUsers(@RequestParam String keyword) {
         logger.info("Searching users with keyword: {}", keyword);
         return ResponseEntity.ok(userService.searchUsers(keyword));
+    }
+
+    // Update profile image - User can update their own image
+    @PatchMapping("/{id}/image")
+    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")
+    public ResponseEntity<UserResponse> updateProfileImage(@PathVariable Long id,
+                                                            @RequestBody Map<String, String> request) {
+        String imageUrl = request.get("profileImageUrl");
+        logger.info("Updating profile image for user id: {}", id);
+        return ResponseEntity.ok(userService.updateProfileImage(id, imageUrl));
+    }
+
+    // Delete profile image - User can delete their own image
+    @DeleteMapping("/{id}/image")
+    @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")
+    public ResponseEntity<UserResponse> deleteProfileImage(@PathVariable Long id) {
+        logger.info("Deleting profile image for user id: {}", id);
+        return ResponseEntity.ok(userService.deleteProfileImage(id));
     }
 }

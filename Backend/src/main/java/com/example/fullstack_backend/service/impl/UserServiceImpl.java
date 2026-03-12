@@ -1,16 +1,10 @@
 package com.example.fullstack_backend.service.impl;
 
-import com.example.fullstack_backend.dto.AuthResponse;
-import com.example.fullstack_backend.dto.LoginRequest;
-import com.example.fullstack_backend.dto.RegisterRequest;
-import com.example.fullstack_backend.dto.UserResponse;
-import com.example.fullstack_backend.exception.ResourceNotFoundException;
-import com.example.fullstack_backend.exception.UserAlreadyExistsException;
-import com.example.fullstack_backend.model.Role;
-import com.example.fullstack_backend.model.User;
-import com.example.fullstack_backend.repository.UserRepository;
-import com.example.fullstack_backend.security.JwtUtil;
-import com.example.fullstack_backend.service.UserService;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +17,17 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.example.fullstack_backend.dto.AuthResponse;
+import com.example.fullstack_backend.dto.LoginRequest;
+import com.example.fullstack_backend.dto.RegisterRequest;
+import com.example.fullstack_backend.dto.UserResponse;
+import com.example.fullstack_backend.exception.ResourceNotFoundException;
+import com.example.fullstack_backend.exception.UserAlreadyExistsException;
+import com.example.fullstack_backend.model.Role;
+import com.example.fullstack_backend.model.User;
+import com.example.fullstack_backend.repository.UserRepository;
+import com.example.fullstack_backend.security.JwtUtil;
+import com.example.fullstack_backend.service.UserService;
 
 @Service
 @Transactional
@@ -68,6 +69,7 @@ public class UserServiceImpl implements UserService {
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole() != null ? request.getRole() : Role.STUDENT)
+                .profileImageUrl(request.getProfileImageUrl())
                 .isActive(true)
                 .build();
 
@@ -84,6 +86,7 @@ public class UserServiceImpl implements UserService {
                 .username(savedUser.getUsername())
                 .name(savedUser.getName())
                 .role(savedUser.getRole())
+                .profileImageUrl(savedUser.getProfileImageUrl())
                 .expiresAt(jwtUtil.getExpirationDateTime(token))
                 .message("User registered successfully")
                 .build();
@@ -119,6 +122,7 @@ public class UserServiceImpl implements UserService {
                     .username(user.getUsername())
                     .name(user.getName())
                     .role(user.getRole())
+                    .profileImageUrl(user.getProfileImageUrl())
                     .expiresAt(jwtUtil.getExpirationDateTime(token))
                     .message("Login successful")
                     .build();
@@ -175,6 +179,11 @@ public class UserServiceImpl implements UserService {
         user.setAddress(request.getAddress());
         user.setAge(request.getAge());
         user.setUsername(request.getUsername());
+        
+        // Update profile image URL if provided
+        if (request.getProfileImageUrl() != null) {
+            user.setProfileImageUrl(request.getProfileImageUrl());
+        }
 
         // Update password only if provided
         if (request.getPassword() != null && !request.getPassword().isEmpty()) {
@@ -238,6 +247,31 @@ public class UserServiceImpl implements UserService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .lastLogin(user.getLastLogin())
+                .profileImageUrl(user.getProfileImageUrl())
                 .build();
+    }
+
+    @Override
+    public UserResponse updateProfileImage(Long id, String imageUrl) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        
+        user.setProfileImageUrl(imageUrl);
+        User updatedUser = userRepository.save(user);
+        logger.info("Profile image updated for user: {}", updatedUser.getUsername());
+        
+        return mapToUserResponse(updatedUser);
+    }
+
+    @Override
+    public UserResponse deleteProfileImage(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        
+        user.setProfileImageUrl(null);
+        User updatedUser = userRepository.save(user);
+        logger.info("Profile image deleted for user: {}", updatedUser.getUsername());
+        
+        return mapToUserResponse(updatedUser);
     }
 }

@@ -35,4 +35,8 @@ public interface UserService {
     List<UserResponse> searchUsers(String keyword);
 
     UserResponse getCurrentUser(String username);
+
+    UserResponse updateProfileImage(Long id, String imageUrl);
+
+    UserResponse deleteProfileImage(Long id);
 }
