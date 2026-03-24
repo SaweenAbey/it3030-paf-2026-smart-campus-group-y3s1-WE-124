@@ -21,8 +21,15 @@ public class AuthResponse {
     private Long userId;
     private String username;
     private String name;
+    private String email;
+    private String phoneNumber;
+    private String department;
+    private String campusId;
     private Role role;
+    private Boolean isEmailVerified;
     private String profileImageUrl;
     private LocalDateTime expiresAt;
+    private LocalDateTime lastLogin;
+    private Boolean otpRequired;
     private String message;
 }

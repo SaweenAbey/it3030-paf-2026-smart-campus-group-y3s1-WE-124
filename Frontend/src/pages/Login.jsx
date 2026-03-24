@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -7,14 +8,36 @@ const Login = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    otp: '',
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [otpStep, setOtpStep] = useState(false);
+  const [challengeUser, setChallengeUser] = useState('');
+  const [challengePhone, setChallengePhone] = useState('');
 
-  const { login } = useAuth();
+  const { login, verifyLoginOtp, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      toast.error('Google login failed. Missing credential token');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+      toast.success('Signed in with Google');
+      navigate('/');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Google login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -36,6 +59,9 @@ const Login = () => {
     if (!value || value.trim() === '') {
       error = `${name.charAt(0).toUpperCase() + name.slice(1)} is required`;
     }
+    if (name === 'otp' && value && !/^\d{6}$/.test(value)) {
+      error = 'OTP must be a 6-digit code';
+    }
     setErrors((prev) => ({ ...prev, [name]: error }));
     return !error;
   };
@@ -44,28 +70,39 @@ const Login = () => {
     const newErrors = {};
     let isValid = true;
 
-    if (!formData.username || formData.username.trim() === '') {
-      newErrors.username = 'Username is required';
-      isValid = false;
-    }
+    if (!otpStep) {
+      if (!formData.username || formData.username.trim() === '') {
+        newErrors.username = 'Username is required';
+        isValid = false;
+      }
 
-    if (!formData.password || formData.password.trim() === '') {
-      newErrors.password = 'Password is required';
-      isValid = false;
+      if (!formData.password || formData.password.trim() === '') {
+        newErrors.password = 'Password is required';
+        isValid = false;
+      }
+    } else {
+      if (!formData.otp || formData.otp.trim() === '') {
+        newErrors.otp = 'OTP is required';
+        isValid = false;
+      } else if (!/^\d{6}$/.test(formData.otp.trim())) {
+        newErrors.otp = 'OTP must be a 6-digit code';
+        isValid = false;
+      }
     }
 
     setErrors(newErrors);
-    setTouched({ username: true, password: true });
+    setTouched(otpStep ? { otp: true } : { username: true, password: true });
 
     if (!isValid) {
-      // Show toast for empty fields
-      const emptyFields = [];
-      if (newErrors.username) emptyFields.push('Username');
-      if (newErrors.password) emptyFields.push('Password');
-      toast.error(`${emptyFields.join(' and ')} ${emptyFields.length > 1 ? 'are' : 'is'} required`);
+      toast.error('Please complete the required fields');
     }
 
     return isValid;
+  };
+
+  const maskPhone = (phone) => {
+    if (!phone || phone.length < 4) return '******';
+    return `******${phone.slice(-4)}`;
   };
 
   const handleSubmit = async (e) => {
@@ -75,31 +112,53 @@ const Login = () => {
     
     setLoading(true);
     try {
-      await login(formData);
-      toast.success('Welcome back!');
-      navigate('/');
+      if (!otpStep) {
+        const result = await login({ username: formData.username, password: formData.password });
+
+        if (result?.otpRequired) {
+          setOtpStep(true);
+          setChallengeUser(result.username || formData.username);
+          setChallengePhone(maskPhone(result.phoneNumber));
+          setFormData((prev) => ({ ...prev, otp: '' }));
+          setTouched({});
+          setErrors({});
+          toast.success('OTP sent to your registered phone number');
+        } else if (result?.token) {
+          toast.success('Welcome back!');
+          navigate('/');
+        }
+      } else {
+        await verifyLoginOtp({
+          username: challengeUser || formData.username,
+          otp: formData.otp.trim(),
+        });
+        toast.success('Login successful');
+        navigate('/');
+      }
     } catch (error) {
-      // Handle different error types
       const errorData = error.response?.data;
       
       if (errorData?.errors) {
-        // Validation errors from backend
         setErrors(errorData.errors);
         const errorMessages = Object.values(errorData.errors).join(', ');
         toast.error(errorMessages || 'Please check your input');
       } else if (error.response?.status === 401) {
-        // Invalid credentials
-        toast.error('Invalid username or password');
+        toast.error(otpStep ? 'Invalid or expired OTP' : 'Invalid username or password');
       } else if (error.response?.status === 404) {
-        // User not found
         toast.error('User not found. Please check your username');
       } else {
-        // Generic error
         toast.error(errorData?.message || 'Login failed. Please try again');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const backToCredentialsStep = () => {
+    setOtpStep(false);
+    setFormData((prev) => ({ ...prev, otp: '' }));
+    setErrors({});
+    setTouched({});
   };
 
   const getInputClassName = (fieldName) => {
@@ -164,76 +223,118 @@ const Login = () => {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-sky-900 mb-2">Welcome back</h2>
-            <p className="text-slate-400">Sign in to continue to your account</p>
+            <h2 className="text-3xl font-bold text-sky-900 mb-2">
+              {otpStep ? 'Verify OTP' : 'Welcome back'}
+            </h2>
+            <p className="text-slate-400">
+              {otpStep
+                ? `Enter the 6-digit code sent to ${challengePhone || 'your registered phone'}`
+                : 'Sign in to continue to your account'}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-2">
-                Username <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder="Enter your username"
-                className={getInputClassName('username')}
-              />
-              {touched.username && errors.username && (
-                <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  {errors.username}
-                </p>
-              )}
-            </div>
+            {!otpStep && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-2">
+                    Username <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    placeholder="Enter your username"
+                    className={getInputClassName('username')}
+                  />
+                  {touched.username && errors.username && (
+                    <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.username}
+                    </p>
+                  )}
+                </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-2">
-                Password <span className="text-red-400">*</span>
-              </label>
-              <div className="relative">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-2">
+                    Password <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder="Enter your password"
+                      className={`${getInputClassName('password')} pr-12`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500 transition-colors"
+                    >
+                      {showPassword ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {touched.password && errors.password && (
+                    <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+
+            {otpStep && (
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">
+                  One-Time Password <span className="text-red-400">*</span>
+                </label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
+                  type="text"
+                  name="otp"
+                  value={formData.otp}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  placeholder="Enter your password"
-                  className={`${getInputClassName('password')} pr-12`}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                  className={getInputClassName('otp')}
                 />
+                {touched.otp && errors.otp && (
+                  <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {errors.otp}
+                  </p>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-sky-500 transition-colors"
+                  onClick={backToCredentialsStep}
+                  className="mt-3 text-sm text-sky-600 hover:text-sky-700 font-medium"
                 >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
+                  Use a different account
                 </button>
               </div>
-              {touched.password && errors.password && (
-                <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  {errors.password}
-                </p>
-              )}
-            </div>
+            )}
 
             {/* Submit Button */}
             <button
@@ -247,13 +348,33 @@ const Login = () => {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Signing in...
+                  {otpStep ? 'Verifying OTP...' : 'Signing in...'}
                 </>
               ) : (
-                'Sign In'
+                otpStep ? 'Verify OTP' : 'Sign In'
               )}
             </button>
           </form>
+
+          {!otpStep && (
+            <>
+              <div className="my-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-xs uppercase tracking-wide text-slate-400">or continue with</span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => toast.error('Google login cancelled or failed')}
+                  useOneTap={false}
+                  theme="outline"
+                  size="large"
+                  shape="pill"
+                />
+              </div>
+            </>
+          )}
 
           <p className="mt-8 text-center text-slate-500">
             Don&apos;t have an account?{' '}

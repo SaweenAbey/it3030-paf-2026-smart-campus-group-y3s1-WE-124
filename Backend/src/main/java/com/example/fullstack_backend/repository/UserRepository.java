@@ -18,7 +18,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByUsername(String username);
 
+    Optional<User> findByEmail(String email);
+
     Boolean existsByUsername(String username);
+
+    Boolean existsByEmail(String email);
 
     List<User> findByRole(Role role);
 
@@ -26,14 +30,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRoleAndIsActive(Role role, Boolean isActive);
 
+    List<User> findByDepartment(String department);
+
+    List<User> findByCampusId(String campusId);
+
     @Modifying
-    @Query("UPDATE User u SET u.lastLogin = :lastLogin WHERE u.username = :username")
-    void updateLastLogin(@Param("username") String username, @Param("lastLogin") LocalDateTime lastLogin);
+    @Query("UPDATE User u SET u.lastLogin = :lastLogin, u.lastActivity = :lastActivity WHERE u.username = :username")
+    void updateLastLogin(@Param("username") String username, 
+                        @Param("lastLogin") LocalDateTime lastLogin,
+                        @Param("lastActivity") LocalDateTime lastActivity);
 
     @Modifying
     @Query("UPDATE User u SET u.isActive = :isActive WHERE u.id = :id")
     void updateActiveStatus(@Param("id") Long id, @Param("isActive") Boolean isActive);
 
-    @Query("SELECT u FROM User u WHERE u.name LIKE %:keyword% OR u.username LIKE %:keyword%")
+    @Query("SELECT u FROM User u WHERE u.name LIKE %:keyword% OR u.username LIKE %:keyword% OR u.email LIKE %:keyword%")
     List<User> searchUsers(@Param("keyword") String keyword);
 }

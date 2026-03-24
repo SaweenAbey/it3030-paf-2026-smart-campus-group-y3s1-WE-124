@@ -40,6 +40,8 @@ api.interceptors.response.use(
 // Auth API calls
 export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
+  verifyOtp: (otpPayload) => api.post('/auth/verify-otp', otpPayload),
+  googleAuth: (payload) => api.post('/auth/google', payload),
   register: (userData) => api.post('/auth/register', userData),
   validateToken: () => api.get('/auth/validate'),
 };

@@ -16,16 +16,31 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, [token]);
 
-  const login = async (credentials) => {
-    const response = await authAPI.login(credentials);
-    const { token: authToken, ...userData } = response.data;
-    
+  const persistAuthSession = (authPayload) => {
+    const { token: authToken, ...userData } = authPayload;
     localStorage.setItem('token', authToken);
     localStorage.setItem('user', JSON.stringify(userData));
-    
     setToken(authToken);
     setUser(userData);
+  };
+
+  const login = async (credentials) => {
+    const response = await authAPI.login(credentials);
+    if (response.data?.token) {
+      persistAuthSession(response.data);
+    }
+    return response.data;
+  };
     
+  const verifyLoginOtp = async (otpPayload) => {
+    const response = await authAPI.verifyOtp(otpPayload);
+    persistAuthSession(response.data);
+    return response.data;
+  };
+
+  const loginWithGoogle = async (idToken) => {
+    const response = await authAPI.googleAuth({ idToken });
+    persistAuthSession(response.data);
     return response.data;
   };
 
@@ -76,6 +91,8 @@ export const AuthProvider = ({ children }) => {
         token,
         loading,
         login,
+        verifyLoginOtp,
+        loginWithGoogle,
         register,
         logout,
         isAuthenticated,
