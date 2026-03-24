@@ -17,13 +17,20 @@ public class UserResponse {
 
     private Long id;
     private String name;
+    private String email;
+    private String username;
+    private String phoneNumber;
     private String address;
     private Integer age;
-    private String username;
+    private String campusId;
+    private String department;
+    private String specialization;
     private Boolean isActive;
+    private Boolean isEmailVerified;
     private Role role;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLogin;
+    private LocalDateTime lastActivity;
     private String profileImageUrl;
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import mediaUpload from '../utils/mediaUpload';
@@ -7,9 +8,14 @@ import mediaUpload from '../utils/mediaUpload';
 const Signup = () => {
   const [formData, setFormData] = useState({
     name: '',
+    email: '',
+    phoneNumber: '',
     username: '',
     password: '',
     confirmPassword: '',
+    campusId: '',
+    department: '',
+    specialization: '',
     address: '',
     age: '',
     role: 'STUDENT',
@@ -19,8 +25,26 @@ const Signup = () => {
   const [profileImage, setProfileImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoogleSignup = async (credentialResponse) => {
+    if (!credentialResponse?.credential) {
+      toast.error('Google sign up failed. Missing credential token');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await loginWithGoogle(credentialResponse.credential);
+      toast.success('Account ready with Google');
+      navigate('/');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Google sign up failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,8 +69,18 @@ const Signup = () => {
   };
 
   const validateForm = () => {
-    if (!formData.name || !formData.username || !formData.password || !formData.confirmPassword) {
+    if (!formData.name || !formData.email || !formData.phoneNumber || !formData.username || !formData.password || !formData.confirmPassword) {
       toast.error('Please fill in all required fields');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Please enter a valid email address');
+      return false;
+    }
+    const phoneRegex = /^\+?[0-9]{8,15}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      toast.error('Phone number should contain 8-15 digits');
       return false;
     }
     if (formData.password.length < 6) {
@@ -204,6 +238,35 @@ const Signup = () => {
             {/* Username */}
             <div>
               <label className="block text-sm font-medium text-slate-600 mb-2">
+                Email <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-2">
+                Phone Number <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="e.g. +94771234567"
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
+              />
+              <p className="mt-1 text-xs text-slate-400">Used for OTP verification during login</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-2">
                 Username <span className="text-red-400">*</span>
               </label>
               <input
@@ -241,8 +304,47 @@ const Signup = () => {
                 >
                   <option value="STUDENT">Student</option>
                   <option value="TEACHER">Teacher</option>
+                  <option value="TECHNICIAN">Technician</option>
+                  <option value="MANAGER">Manager</option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">Campus ID</label>
+                <input
+                  type="text"
+                  name="campusId"
+                  value={formData.campusId}
+                  onChange={handleChange}
+                  placeholder="Student/Staff ID"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-2">Department</label>
+                <input
+                  type="text"
+                  name="department"
+                  value={formData.department}
+                  onChange={handleChange}
+                  placeholder="Department / Faculty"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-600 mb-2">Specialization</label>
+              <input
+                type="text"
+                name="specialization"
+                value={formData.specialization}
+                onChange={handleChange}
+                placeholder="Maintenance, IT Support, etc."
+                className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 bg-white text-slate-800 placeholder-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
+              />
             </div>
 
             {/* Address */}
@@ -343,6 +445,22 @@ const Signup = () => {
               )}
             </button>
           </form>
+
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-xs uppercase tracking-wide text-slate-400">or continue with</span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSignup}
+              onError={() => toast.error('Google sign up cancelled or failed')}
+              useOneTap={false}
+              theme="outline"
+              size="large"
+              shape="pill"
+            />
+          </div>
 
           <p className="mt-8 text-center text-slate-500">
             Already have an account?{' '}

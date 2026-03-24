@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import com.example.fullstack_backend.dto.AuthResponse;
+import com.example.fullstack_backend.dto.GoogleAuthRequest;
 import com.example.fullstack_backend.dto.LoginRequest;
+import com.example.fullstack_backend.dto.OtpVerificationRequest;
 import com.example.fullstack_backend.dto.RegisterRequest;
 import com.example.fullstack_backend.dto.UserResponse;
 import com.example.fullstack_backend.model.Role;
@@ -15,6 +17,10 @@ public interface UserService {
     AuthResponse register(RegisterRequest request);
 
     AuthResponse login(LoginRequest request);
+
+    AuthResponse verifyLoginOtp(OtpVerificationRequest request);
+
+    AuthResponse authenticateWithGoogle(GoogleAuthRequest request);
 
     Optional<User> findByUsername(String username);
 

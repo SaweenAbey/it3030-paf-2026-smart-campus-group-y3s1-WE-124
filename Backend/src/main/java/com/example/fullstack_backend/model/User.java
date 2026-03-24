@@ -45,12 +45,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String name;
 
-    @Size(max = 255, message = "Address cannot exceed 255 characters")
-    private String address;
-
-    @Min(value = 1, message = "Age must be at least 1")
-    @Max(value = 150, message = "Age must be less than 150")
-    private Integer age;
+    @NotBlank(message = "Email is required")
+    @Column(nullable = false, unique = true)
+    @Size(max = 100, message = "Email cannot exceed 100 characters")
+    private String email;
 
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
@@ -64,6 +62,34 @@ public class User implements UserDetails {
 
     @Transient
     private String confirmPassword;
+
+    @Column(name = "phone_number", length = 15)
+    @Size(max = 15, message = "Phone number cannot exceed 15 characters")
+    private String phoneNumber;
+
+    @Size(max = 255, message = "Address cannot exceed 255 characters")
+    private String address;
+
+    @Min(value = 1, message = "Age must be at least 1")
+    @Max(value = 150, message = "Age must be less than 150")
+    private Integer age;
+
+   
+    @Column(name = "campus_id", length = 20)
+    @Size(max = 20, message = "Campus ID cannot exceed 20 characters")
+    private String campusId;  
+
+    @Column(name = "department", length = 100)
+    @Size(max = 100, message = "Department cannot exceed 100 characters")
+    private String department;  
+
+    @Column(name = "specialization", length = 100)
+    @Size(max = 100, message = "Specialization cannot exceed 100 characters")
+    private String specialization;  
+
+    @Column(name = "is_email_verified", nullable = false)
+    @Builder.Default
+    private Boolean isEmailVerified = false;
 
     @Column(name = "is_active", nullable = false)
     @Builder.Default
@@ -83,19 +109,42 @@ public class User implements UserDetails {
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
 
+    @Column(name = "last_activity")
+    private LocalDateTime lastActivity;
+
     @Size(max = 500, message = "Profile image URL cannot exceed 500 characters")
     @Column(name = "profile_image_url", length = 500)
     private String profileImageUrl;
+
+    @Column(name = "login_attempts", nullable = false)
+    @Builder.Default
+    private Integer loginAttempts = 0;
+
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
+    @Column(name = "login_otp", length = 10)
+    private String loginOtp;
+
+    @Column(name = "login_otp_expires_at")
+    private LocalDateTime loginOtpExpiresAt;
+
+    @Column(name = "last_otp_requested_at")
+    private LocalDateTime lastOtpRequestedAt;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (lastActivity == null) {
+            lastActivity = LocalDateTime.now();
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+        lastActivity = LocalDateTime.now();
     }
 
     // UserDetails implementation
@@ -121,7 +170,11 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return isActive;
+        
+        if (lockedUntil != null && lockedUntil.isAfter(LocalDateTime.now())) {
+            return false;
+        }
+        return isActive && loginAttempts < 5;
     }
 
     @Override
