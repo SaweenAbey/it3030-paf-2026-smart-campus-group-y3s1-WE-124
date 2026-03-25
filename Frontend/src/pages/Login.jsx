@@ -31,7 +31,7 @@ const Login = () => {
     try {
       await loginWithGoogle(credentialResponse.credential);
       toast.success('Signed in with Google');
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Google login failed');
     } finally {
@@ -125,7 +125,7 @@ const Login = () => {
           toast.success('OTP sent to your registered phone number');
         } else if (result?.token) {
           toast.success('Welcome back!');
-          navigate('/');
+          navigate('/dashboard');
         }
       } else {
         await verifyLoginOtp({
@@ -133,7 +133,7 @@ const Login = () => {
           otp: formData.otp.trim(),
         });
         toast.success('Login successful');
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch (error) {
       const errorData = error.response?.data;

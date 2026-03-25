@@ -38,7 +38,7 @@ const Signup = () => {
     try {
       await loginWithGoogle(credentialResponse.credential);
       toast.success('Account ready with Google');
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Google sign up failed');
     } finally {

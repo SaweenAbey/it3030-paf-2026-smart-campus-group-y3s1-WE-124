@@ -67,6 +67,12 @@ const Navbar = () => {
                   </div>
                 </div>
                 <button
+                  onClick={() => navigate('/dashboard?tab=profile')}
+                  className="px-4 py-2 rounded-lg text-slate-500 hover:text-sky-900 hover:bg-slate-50 transition-all text-sm font-medium"
+                >
+                  Profile
+                </button>
+                <button
                   onClick={handleLogout}
                   className="px-4 py-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-50 transition-all text-sm font-medium"
                 >
