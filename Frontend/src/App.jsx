@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Dashboard from './pages/Dashboard';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -35,7 +36,7 @@ const PublicRoute = ({ children }) => {
     );
   }
 
-  return isAuthenticated() ? <Navigate to="/" /> : children;
+  return isAuthenticated() ? <Navigate to="/dashboard" /> : children;
 };
 
 function AppContent() {
@@ -47,6 +48,14 @@ function AppContent() {
       {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/login"
           element={

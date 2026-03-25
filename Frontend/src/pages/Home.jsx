@@ -78,7 +78,7 @@ const Home = () => {
             </p>
 
             {isAuthenticated() ? (
-              <div className="inline-flex items-center gap-4 p-6 rounded-2xl bg-white border border-slate-100 shadow-lg">
+              <div className="inline-flex flex-col sm:flex-row items-center gap-4 p-6 rounded-2xl bg-white border border-slate-100 shadow-lg">
                 <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-sky-900 to-sky-400 flex items-center justify-center">
                   <span className="text-white font-bold text-2xl">{user?.name?.charAt(0).toUpperCase()}</span>
                 </div>
@@ -86,6 +86,12 @@ const Home = () => {
                   <div className="text-xl font-semibold text-sky-900">Welcome, {user?.name}!</div>
                   <div className="text-slate-400">{user?.role}</div>
                 </div>
+                <Link
+                  to="/dashboard"
+                  className="sm:ml-4 px-5 py-2.5 rounded-xl bg-linear-to-r from-sky-900 to-sky-500 text-white text-sm font-semibold hover:opacity-95 transition-all"
+                >
+                  Open Dashboard
+                </Link>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
