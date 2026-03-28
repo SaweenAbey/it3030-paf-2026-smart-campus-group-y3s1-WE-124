@@ -162,84 +162,67 @@ const Login = () => {
   };
 
   const getInputClassName = (fieldName) => {
-    const baseClass = "w-full px-4 py-3 rounded-xl border-2 bg-white text-slate-800 placeholder-slate-400 focus:ring-4 outline-none transition-all";
+    const baseClass = "w-full rounded-xl border bg-white px-4 py-3 text-slate-800 placeholder-slate-400 outline-none transition focus:ring-4";
     const hasError = touched[fieldName] && errors[fieldName];
     
     if (hasError) {
       return `${baseClass} border-red-400 focus:border-red-400 focus:ring-red-100`;
     }
-    return `${baseClass} border-slate-200 focus:border-sky-400 focus:ring-sky-100`;
+    return `${baseClass} border-slate-300 focus:border-sky-500 focus:ring-sky-100`;
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-5/12 flex-col justify-between p-12 bg-linear-to-br from-sky-900 via-sky-800 to-sky-500 relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white opacity-5" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-white opacity-5" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-lg">
-              <span className="text-sky-900 font-bold text-xl">U</span>
-            </div>
-            <span className="text-white font-semibold text-xl tracking-wide">UNI 360</span>
-          </div>
-          
-          <h1 className="text-4xl font-bold text-white leading-tight mb-6">
-            University Learning<br />& Helping Hub
-          </h1>
-          <p className="text-sky-200 text-lg leading-relaxed max-w-sm">
-            Access courses, connect with peers, and achieve academic excellence.
-          </p>
-        </div>
-
-        <div className="relative z-10 flex gap-12">
-          <div>
-            <div className="text-2xl font-bold text-white">10K+</div>
-            <div className="text-sky-300 text-sm">Students</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-white">500+</div>
-            <div className="text-sky-300 text-sm">Courses</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-white">98%</div>
-            <div className="text-sky-300 text-sm">Satisfaction</div>
-          </div>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-slate-100 via-sky-50 to-slate-100 px-4 py-8 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-20 top-10 h-64 w-64 rounded-full bg-sky-300/25 blur-3xl" />
+        <div className="absolute -right-24 bottom-10 h-72 w-72 rounded-full bg-cyan-300/20 blur-3xl" />
       </div>
 
-      {/* Right Panel - Form */}
-      <div className="flex w-full lg:w-7/12 items-center justify-center p-8 lg:p-16">
-        <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="flex lg:hidden items-center gap-3 mb-12">
-            <div className="w-12 h-12 rounded-xl bg-linear-to-br from-sky-900 to-sky-500 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">U</span>
+      <div className="relative mx-auto grid min-h-[88vh] max-w-6xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl lg:grid-cols-[42%_58%]">
+        <section className="hidden bg-gradient-to-br from-slate-900 via-sky-900 to-sky-700 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-xl font-bold text-slate-900">U</div>
+              <span className="text-xl font-semibold tracking-wide">UNI 360</span>
             </div>
-            <span className="text-sky-900 font-bold text-xl">UNI 360</span>
-          </div>
-
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-sky-900 mb-2">
-              {otpStep ? 'Verify OTP' : 'Welcome back'}
-            </h2>
-            <p className="text-slate-400">
-              {otpStep
-                ? `Enter the 6-digit code sent to ${challengePhone || 'your registered phone'}`
-                : 'Sign in to continue to your account'}
+            <h1 className="mt-14 text-4xl font-bold leading-tight">Secure sign in for your campus workspace</h1>
+            <p className="mt-4 max-w-xs text-sky-100">
+              Access your personalized dashboard, notifications, and role-based tools.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="rounded-xl bg-white/10 px-2 py-3">
+              <p className="text-xl font-bold">10K+</p>
+              <p className="text-xs text-sky-100">Students</p>
+            </div>
+            <div className="rounded-xl bg-white/10 px-2 py-3">
+              <p className="text-xl font-bold">500+</p>
+              <p className="text-xs text-sky-100">Courses</p>
+            </div>
+            <div className="rounded-xl bg-white/10 px-2 py-3">
+              <p className="text-xl font-bold">98%</p>
+              <p className="text-xs text-sky-100">Satisfaction</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="flex items-center justify-center p-6 sm:p-8 lg:p-10">
+          <div className="w-full max-w-md">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-slate-900">{otpStep ? 'Verify OTP' : 'Sign In'}</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                {otpStep
+                  ? `Enter the 6-digit code sent to ${challengePhone || 'your registered phone'}`
+                  : 'Welcome back. Continue to your account.'}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
             {!otpStep && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-2">
-                    Username <span className="text-red-400">*</span>
-                  </label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Username</label>
                   <input
                     type="text"
                     name="username"
@@ -250,7 +233,7 @@ const Login = () => {
                     className={getInputClassName('username')}
                   />
                   {touched.username && errors.username && (
-                    <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+                    <p className="mt-1.5 flex items-center gap-1 text-sm text-red-500">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
@@ -260,9 +243,7 @@ const Login = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-600 mb-2">
-                    Password <span className="text-red-400">*</span>
-                  </label>
+                  <label className="mb-2 block text-sm font-medium text-slate-700">Password</label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -291,7 +272,7 @@ const Login = () => {
                     </button>
                   </div>
                   {touched.password && errors.password && (
-                    <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+                    <p className="mt-1.5 flex items-center gap-1 text-sm text-red-500">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
@@ -304,9 +285,7 @@ const Login = () => {
 
             {otpStep && (
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-2">
-                  One-Time Password <span className="text-red-400">*</span>
-                </label>
+                <label className="mb-2 block text-sm font-medium text-slate-700">One-Time Password</label>
                 <input
                   type="text"
                   name="otp"
@@ -318,7 +297,7 @@ const Login = () => {
                   className={getInputClassName('otp')}
                 />
                 {touched.otp && errors.otp && (
-                  <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">
+                  <p className="mt-1.5 flex items-center gap-1 text-sm text-red-500">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
@@ -340,7 +319,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 rounded-xl bg-linear-to-r from-sky-900 to-sky-500 text-white font-semibold shadow-lg hover:shadow-xl hover:opacity-95 disabled:opacity-60 transition-all flex items-center justify-center gap-2"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
             >
               {loading ? (
                 <>
@@ -356,33 +335,34 @@ const Login = () => {
             </button>
           </form>
 
-          {!otpStep && (
-            <>
-              <div className="my-6 flex items-center gap-3">
-                <div className="h-px flex-1 bg-slate-200" />
-                <span className="text-xs uppercase tracking-wide text-slate-400">or continue with</span>
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
-              <div className="flex justify-center">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => toast.error('Google login cancelled or failed')}
-                  useOneTap={false}
-                  theme="outline"
-                  size="large"
-                  shape="pill"
-                />
-              </div>
-            </>
-          )}
+            {!otpStep && (
+              <>
+                <div className="my-6 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <span className="text-xs uppercase tracking-wide text-slate-400">or continue with</span>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+                <div className="flex justify-center">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => toast.error('Google login cancelled or failed')}
+                    useOneTap={false}
+                    theme="outline"
+                    size="large"
+                    shape="pill"
+                  />
+                </div>
+              </>
+            )}
 
-          <p className="mt-8 text-center text-slate-500">
-            Don&apos;t have an account?{' '}
-            <Link to="/signup" className="text-sky-500 font-semibold hover:text-sky-600 transition-colors">
-              Sign up
-            </Link>
-          </p>
-        </div>
+            <p className="mt-7 text-center text-slate-500">
+              Don&apos;t have an account?{' '}
+              <Link to="/signup" className="font-semibold text-sky-600 transition hover:text-sky-700">
+                Sign up
+              </Link>
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );

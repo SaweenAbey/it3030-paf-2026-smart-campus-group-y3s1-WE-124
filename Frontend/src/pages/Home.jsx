@@ -1,8 +1,32 @@
-import { useAuth } from '../context/AuthContext';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
   const { user, isAuthenticated } = useAuth();
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    let ticking = false;
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrollY(window.scrollY || 0);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  const heroTilt = useMemo(() => clamp(scrollY * 0.03, 0, 12), [scrollY]);
+  const heroLift = useMemo(() => clamp(scrollY * 0.15, 0, 40), [scrollY]);
 
   const features = [
     {
@@ -43,6 +67,24 @@ const Home = () => {
     },
   ];
 
+  const motionCards = [
+    {
+      title: 'Live Campus Pulse',
+      text: 'Realtime updates from classrooms, labs, and student services.',
+      accent: 'from-cyan-500 to-sky-600',
+    },
+    {
+      title: 'Role-Based Intelligence',
+      text: 'Every dashboard is personalized for student, teacher, admin, and technician workflows.',
+      accent: 'from-blue-600 to-indigo-700',
+    },
+    {
+      title: 'Smart Automation',
+      text: 'Streamline bookings, alerts, and operations from one connected platform.',
+      accent: 'from-sky-500 to-teal-500',
+    },
+  ];
+
   const stats = [
     { num: '10K+', label: 'Active Students' },
     { num: '500+', label: 'Courses' },
@@ -51,150 +93,184 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-linear-to-br from-sky-900/5 via-transparent to-sky-400/5" />
-        <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-sky-400 opacity-10 blur-3xl translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full bg-sky-900 opacity-10 blur-3xl -translate-x-1/2 translate-y-1/2" />
-        
-        <div className="relative max-w-6xl mx-auto px-6 py-24">
-          <div className="text-center max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-100 shadow-sm mb-8">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-sm text-slate-600">Smart Campus Operations Hub</span>
-            </div>
-            
-            <h1 className="text-5xl md:text-6xl font-bold text-sky-900 leading-tight mb-6">
-              Welcome to{' '}
-              <span className="text-transparent bg-clip-text bg-linear-to-r from-sky-900 to-sky-400">
-                UNI 360
-              </span>
-            </h1>
-            
-            <p className="text-xl text-slate-500 leading-relaxed mb-10">
-              Your complete university learning and helping hub. Access courses, 
-              connect with peers, and achieve academic excellence.
-            </p>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e0f2fe,transparent_35%),radial-gradient(circle_at_bottom_left,#bae6fd,transparent_40%),#f8fafc]">
+      <section className="relative overflow-hidden px-4 pb-20 pt-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+            <div>
+              <p className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 shadow-sm">
+                Smart Campus Experience
+              </p>
+              <h1 className="mt-5 text-5xl font-black leading-[1.05] text-slate-900 sm:text-6xl">
+                Professional Campus Platform
+                
+              </h1>
+              <p className="mt-6 max-w-xl text-lg text-slate-600">
+                UNI 360 combines learning, bookings, operations, and role-based dashboards in one modern digital hub.
+              </p>
 
-            {isAuthenticated() ? (
-              <div className="inline-flex flex-col sm:flex-row items-center gap-4 p-6 rounded-2xl bg-white border border-slate-100 shadow-lg">
-                <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-sky-900 to-sky-400 flex items-center justify-center">
-                  <span className="text-white font-bold text-2xl">{user?.name?.charAt(0).toUpperCase()}</span>
-                </div>
-                <div className="text-left">
-                  <div className="text-xl font-semibold text-sky-900">Welcome, {user?.name}!</div>
-                  <div className="text-slate-400">{user?.role}</div>
-                </div>
-                <Link
-                  to="/dashboard"
-                  className="sm:ml-4 px-5 py-2.5 rounded-xl bg-linear-to-r from-sky-900 to-sky-500 text-white text-sm font-semibold hover:opacity-95 transition-all"
-                >
-                  Open Dashboard
-                </Link>
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                {isAuthenticated() ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      className="rounded-2xl bg-slate-900 px-7 py-3 font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Open Dashboard
+                    </Link>
+                    <p className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-600">
+                      Signed in as <span className="font-semibold text-slate-900">{user?.role}</span>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/signup"
+                      className="rounded-2xl bg-slate-900 px-7 py-3 font-semibold text-white transition hover:bg-slate-800"
+                    >
+                      Create Account
+                    </Link>
+                    <Link
+                      to="/login"
+                      className="rounded-2xl border border-slate-300 bg-white px-7 py-3 font-semibold text-slate-700 transition hover:border-slate-400"
+                    >
+                      Sign In
+                    </Link>
+                  </>
+                )}
               </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link
-                  to="/signup"
-                  className="px-8 py-4 rounded-xl bg-linear-to-r from-sky-900 to-sky-500 text-white font-semibold shadow-lg hover:shadow-xl hover:opacity-95 transition-all"
-                >
-                  Get Started Free
-                </Link>
-                <Link
-                  to="/login"
-                  className="px-8 py-4 rounded-xl bg-white text-sky-900 font-semibold border-2 border-slate-200 hover:border-sky-400 transition-all"
-                >
-                  Sign In
-                </Link>
+            </div>
+
+            <div className="[perspective:1200px]">
+              <div
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_35px_80px_-35px_rgba(2,132,199,0.35)] transition-transform duration-300"
+                style={{
+                  transform: `translateY(${-heroLift}px) rotateX(${heroTilt}deg) rotateY(${-heroTilt * 0.45}deg)`,
+                }}
+              >
+                <div className="mb-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                  <p className="text-sm font-semibold text-slate-700">Campus Activity Stream</p>
+                  <p className="text-xs font-semibold text-emerald-600">Live</p>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    'Teacher uploaded new lecture resources',
+                    '3 new booking requests pending approval',
+                    'System maintenance completed successfully',
+                  ].map((item) => (
+                    <div key={item} className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">
+                      {item}
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-sky-900 mb-4">Everything You Need</h2>
-            <p className="text-slate-500 max-w-xl mx-auto">
-              All the tools for a successful academic journey in one place
-            </p>
+      <section className="px-4 pb-20 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-10 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900">Core Platform Features</h2>
+              <p className="mt-2 text-slate-500">Built to support every role across a smart campus ecosystem.</p>
+            </div>
           </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, i) => (
-              <div
-                key={i}
-                className="group p-6 rounded-2xl bg-white border border-slate-100 hover:border-sky-200 hover:shadow-xl hover:shadow-sky-100 transition-all duration-300"
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {features.map((feature) => (
+              <article
+                key={feature.title}
+                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
-                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-sky-100 to-sky-50 flex items-center justify-center text-sky-700 mb-4 group-hover:scale-110 transition-transform">
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-sky-700">
                   {feature.icon}
                 </div>
-                <h3 className="text-lg font-semibold text-sky-900 mb-2">{feature.title}</h3>
-                <p className="text-slate-400 text-sm">{feature.desc}</p>
+                <h3 className="text-lg font-semibold text-slate-900">{feature.title}</h3>
+                <p className="mt-2 text-sm text-slate-500">{feature.desc}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 pb-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-900 via-sky-900 to-slate-900 p-8 sm:p-10">
+            <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-sky-200">Scroll 3D Animation</p>
+                <h3 className="mt-2 text-3xl font-bold text-white">Motion that reacts to your scroll</h3>
+              </div>
+              <p className="max-w-md text-sm text-sky-100">
+                As you scroll, these cards rotate and lift in 3D space to create a modern interactive homepage experience.
+              </p>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3 [perspective:1300px]">
+              {motionCards.map((card, index) => {
+                const depth = clamp((scrollY - 250) * 0.06 - index * 8, -25, 30);
+                const rotateX = clamp((scrollY - 120) * 0.015 - index * 3.2, -10, 12);
+                const rotateY = clamp(index % 2 === 0 ? depth * 0.35 : -depth * 0.35, -10, 10);
+
+                return (
+                  <article
+                    key={card.title}
+                    className="rounded-3xl border border-white/20 bg-white/10 p-6 backdrop-blur-sm transition-transform duration-200"
+                    style={{
+                      transform: `translateZ(${depth}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+                    }}
+                  >
+                    <div className={`inline-flex rounded-full bg-gradient-to-r ${card.accent} px-3 py-1 text-xs font-semibold text-white`}>
+                      Motion Layer {index + 1}
+                    </div>
+                    <h4 className="mt-4 text-xl font-semibold text-white">{card.title}</h4>
+                    <p className="mt-2 text-sm text-sky-100">{card.text}</p>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 pb-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl rounded-3xl border border-slate-200 bg-white p-8 sm:p-10">
+          <div className="grid gap-8 md:grid-cols-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="rounded-2xl bg-slate-50 p-6 text-center">
+                <p className="text-4xl font-black text-slate-900">{stat.num}</p>
+                <p className="mt-1 text-sm text-slate-500">{stat.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="rounded-3xl bg-linear-to-r from-sky-900 to-sky-500 p-12 relative overflow-hidden">
-            <div className="absolute inset-0 opacity-20">
-              <div className="absolute top-4 left-4 w-32 h-32 rounded-full border border-white opacity-20" />
-              <div className="absolute bottom-4 right-4 w-48 h-48 rounded-full border border-white opacity-20" />
-            </div>
-            
-            <div className="relative grid md:grid-cols-4 gap-8 text-center">
-              {stats.map((stat, i) => (
-                <div key={i}>
-                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">{stat.num}</div>
-                  <div className="text-sky-200">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
       {!isAuthenticated() && (
-        <section className="py-20">
-          <div className="max-w-3xl mx-auto px-6 text-center">
-            <h2 className="text-3xl font-bold text-sky-900 mb-4">
-              Ready to Get Started?
-            </h2>
-            <p className="text-slate-500 mb-8">
-              Join thousands of students already using UNI 360
+        <section className="px-4 pb-24 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-5xl rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm sm:p-12">
+            <h3 className="text-3xl font-bold text-slate-900">Ready to modernize your campus workflow?</h3>
+            <p className="mx-auto mt-3 max-w-xl text-slate-500">
+              Create your UNI 360 account and access smart tools for learning, operations, and collaboration.
             </p>
             <Link
               to="/signup"
-              className="inline-block px-10 py-4 rounded-xl bg-linear-to-r from-sky-900 to-sky-500 text-white font-semibold shadow-lg hover:shadow-xl hover:opacity-95 transition-all"
+              className="mt-7 inline-block rounded-2xl bg-slate-900 px-8 py-3 font-semibold text-white transition hover:bg-slate-800"
             >
-              Create Free Account
+              Get Started
             </Link>
           </div>
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="py-12 bg-sky-900">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white bg-opacity-10 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">U</span>
-              </div>
-              <span className="text-white font-semibold text-lg">UNI 360</span>
-            </div>
-            <p className="text-sky-300 text-sm">
-              © 2026 UNI 360 - Smart Campus Operations Hub
-            </p>
+      <footer className="border-t border-slate-200 bg-white/80 px-4 py-10 backdrop-blur sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white">U</div>
+            <p className="font-semibold text-slate-900">UNI 360</p>
           </div>
+          <p className="text-sm text-slate-500">© 2026 UNI 360 Smart Campus Operations Hub</p>
         </div>
       </footer>
     </div>

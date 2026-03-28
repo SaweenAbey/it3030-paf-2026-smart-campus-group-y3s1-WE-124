@@ -1,10 +1,30 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
+
+  const navLinks = [
+    { label: 'Home', to: '/' },
+    { label: 'Bookings', to: '/bookings' },
+    { label: 'Services', to: '/dashboard' },
+    { label: 'Support', to: '/dashboard?tab=activity' },
+  ];
+
+  const isActive = (to) => {
+    if (to.includes('?')) {
+      return `${location.pathname}${location.search}` === to;
+    }
+
+    if (to === '/dashboard') {
+      return location.pathname === '/dashboard';
+    }
+
+    return location.pathname === to;
+  };
 
   const handleLogout = () => {
     toast((t) => (
@@ -34,68 +54,77 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white border-b border-slate-100 sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-linear-to-br from-sky-900 to-sky-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">U</span>
-            </div>
-            <span className="text-sky-900 font-semibold text-lg hidden sm:block">UNI 360</span>
-          </Link>
-
-          {/* Right Section */}
-          <div className="flex items-center gap-3">
-            {isAuthenticated() ? (
-              <>
-                <div className="hidden sm:flex items-center gap-3 pr-3 border-r border-slate-200">
-                  {user?.profileImageUrl ? (
-                    <img
-                      src={user.profileImageUrl}
-                      alt={user?.name}
-                      className="w-10 h-10 rounded-2xl object-cover border-2 border-sky-200"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-lg bg-linear-to-br from-sky-900 to-sky-500 flex items-center justify-center">
-                      <span className="text-white font-medium text-xs">{user?.name?.charAt(0).toUpperCase()}</span>
-                    </div>
-                  )}
-                  <div className="text-sm">
-                    <div className="font-medium text-sky-900">{user?.name}</div>
-                    <div className="text-slate-400 text-xs">{user?.role}</div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigate('/dashboard?tab=profile')}
-                  className="px-4 py-2 rounded-lg text-slate-500 hover:text-sky-900 hover:bg-slate-50 transition-all text-sm font-medium"
-                >
-                  Profile
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-50 transition-all text-sm font-medium"
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 rounded-lg text-slate-500 hover:text-sky-900 hover:bg-slate-50 transition-all text-sm font-medium"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className="px-4 py-2 rounded-lg bg-linear-to-r from-sky-900 to-sky-500 text-white text-sm font-medium hover:shadow-lg transition-all"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
+    <nav className="sticky top-3 z-50 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between rounded-full border border-slate-200 bg-white/95 px-3 shadow-sm backdrop-blur sm:px-4">
+        <Link to="/" className="flex items-center gap-2 pl-1">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-sky-900 to-sky-500">
+            <span className="text-sm font-bold text-white">U</span>
           </div>
+          <span className="hidden text-base font-semibold text-slate-900 sm:block">UNI 360</span>
+        </Link>
+
+        <div className="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1 md:flex">
+          {navLinks.map((item) => {
+            const requiresAuth = item.to.startsWith('/dashboard');
+            const target = !isAuthenticated() && requiresAuth ? '/login' : item.to;
+            const active = isActive(item.to);
+
+            return (
+              <Link
+                key={item.label}
+                to={target}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                  active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Notifications"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8">
+              <path d="M14.5 18a2.5 2.5 0 0 1-5 0" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M18 9.5a6 6 0 1 0-12 0c0 6-2 6-2 7.5h16c0-1.5-2-1.5-2-7.5Z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          {isAuthenticated() ? (
+            <>
+              <button
+                onClick={() => navigate('/dashboard?tab=profile')}
+                className="hidden rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:block"
+              >
+                {user?.name?.split(' ')[0] || 'Profile'}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+              >
+                Login
+              </Link>
+              
+            </>
+          )}
         </div>
       </div>
     </nav>
