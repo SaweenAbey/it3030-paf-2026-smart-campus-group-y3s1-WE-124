@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import Bookings from './pages/Bookings';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -48,6 +49,7 @@ function AppContent() {
       {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/bookings" element={<Bookings />} />
         <Route
           path="/dashboard"
           element={
