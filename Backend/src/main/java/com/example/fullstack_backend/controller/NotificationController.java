@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.fullstack_backend.dto.AudienceNotificationRequest;
 import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
 import com.example.fullstack_backend.dto.CreateNotificationRequest;
 import com.example.fullstack_backend.dto.NotificationResponse;
@@ -114,6 +115,22 @@ public class NotificationController {
 
         return ResponseEntity.ok(Map.of(
                 "message", "Broadcast notifications created successfully",
+                "count", created.size(),
+                "notifications", created
+        ));
+    }
+
+    @PostMapping("/audience")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER') or hasRole('TECHNICIAN')")
+    public ResponseEntity<Map<String, Object>> createNotificationByAudience(
+            @Valid @RequestBody AudienceNotificationRequest request) {
+        String creator = getCurrentUsername();
+        logger.info("Creating notification by audience type {} by {}", request.getAudienceType(), creator);
+        List<NotificationResponse> created = notificationService.createByAudience(creator, request);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Notifications created successfully for audience",
+                "audienceType", request.getAudienceType(),
                 "count", created.size(),
                 "notifications", created
         ));

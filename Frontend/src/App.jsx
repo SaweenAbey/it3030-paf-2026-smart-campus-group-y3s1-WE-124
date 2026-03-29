@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
+import NotificationCreate from './pages/NotificationCreate';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -55,6 +56,14 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications/create"
+          element={
+            <ProtectedRoute>
+              <NotificationCreate />
             </ProtectedRoute>
           }
         />

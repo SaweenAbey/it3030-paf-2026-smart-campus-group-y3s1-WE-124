@@ -52,8 +52,23 @@ export const userAPI = {
   updateProfile: (id, data) => api.put(`/users/${id}`, data),
   getAllUsers: () => api.get('/users'),
   getCurrentUser: () => api.get('/users/me'),
+  getUsersByRole: (role) => api.get(`/users/role/${role}`),
+  getActiveUsers: () => api.get('/users/active'),
   updateProfileImage: (id, profileImageUrl) => api.patch(`/users/${id}/image`, { profileImageUrl }),
   deleteProfileImage: (id) => api.delete(`/users/${id}/image`),
+};
+
+// Notification API calls
+export const notificationAPI = {
+  getMyNotifications: (unreadOnly = false) => api.get('/notifications/me', { params: { unreadOnly } }),
+  getUnreadCount: () => api.get('/notifications/me/unread-count'),
+  markAsRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllAsRead: () => api.patch('/notifications/me/read-all'),
+  deleteNotification: (id) => api.delete(`/notifications/${id}`),
+  createForUser: (userId, notification) => api.post(`/notifications/user/${userId}`, notification),
+  createByAudience: (notification) => api.post('/notifications/audience', notification),
+  createForRole: (role, notification) => api.post(`/notifications/role/${role}`, notification),
+  broadcastToAll: (notification) => api.post('/notifications/broadcast', notification),
 };
 
 export default api;

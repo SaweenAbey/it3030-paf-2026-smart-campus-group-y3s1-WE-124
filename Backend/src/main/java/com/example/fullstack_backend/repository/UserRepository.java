@@ -30,6 +30,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findByRoleAndIsActive(Role role, Boolean isActive);
 
+    List<User> findByRoleInAndIsActive(List<Role> roles, Boolean isActive);
+
+    List<User> findByIdInAndIsActive(List<Long> ids, Boolean isActive);
+
     List<User> findByDepartment(String department);
 
     List<User> findByCampusId(String campusId);
