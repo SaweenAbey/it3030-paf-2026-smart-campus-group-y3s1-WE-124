@@ -60,7 +60,7 @@ public class AuthController {
         
         try {
             AuthResponse response = userService.login(request);
-            logger.info("Password verified, OTP challenge issued for user: {}", response.getUsername());
+            logger.info("Password verified, login challenge processed for user: {}", response.getUsername());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Login failed for user: {} - {}", request.getUsername(), e.getMessage());

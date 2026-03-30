@@ -16,7 +16,7 @@ const Login = () => {
   const [touched, setTouched] = useState({});
   const [otpStep, setOtpStep] = useState(false);
   const [challengeUser, setChallengeUser] = useState('');
-  const [challengePhone, setChallengePhone] = useState('');
+  const [challengeEmail, setChallengeEmail] = useState('');
 
   const { login, verifyLoginOtp, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -100,9 +100,11 @@ const Login = () => {
     return isValid;
   };
 
-  const maskPhone = (phone) => {
-    if (!phone || phone.length < 4) return '******';
-    return `******${phone.slice(-4)}`;
+  const maskEmail = (email) => {
+    if (!email || !email.includes('@')) return 'your registered email';
+    const [local, domain] = email.split('@');
+    const prefix = local.length <= 2 ? local.charAt(0) : local.slice(0, 2);
+    return `${prefix}***@${domain}`;
   };
 
   const handleSubmit = async (e) => {
@@ -118,11 +120,11 @@ const Login = () => {
         if (result?.otpRequired) {
           setOtpStep(true);
           setChallengeUser(result.username || formData.username);
-          setChallengePhone(maskPhone(result.phoneNumber));
+          setChallengeEmail(maskEmail(result.email));
           setFormData((prev) => ({ ...prev, otp: '' }));
           setTouched({});
           setErrors({});
-          toast.success('OTP sent to your registered phone number');
+          toast.success('OTP sent to your registered email');
         } else if (result?.token) {
           toast.success('Welcome back!');
           navigate('/dashboard');
@@ -213,7 +215,7 @@ const Login = () => {
               <h2 className="text-3xl font-bold text-slate-900">{otpStep ? 'Verify OTP' : 'Sign In'}</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {otpStep
-                  ? `Enter the 6-digit code sent to ${challengePhone || 'your registered phone'}`
+                  ? `Enter the 6-digit code sent to ${challengeEmail || 'your registered email'}`
                   : 'Welcome back. Continue to your account.'}
               </p>
             </div>
