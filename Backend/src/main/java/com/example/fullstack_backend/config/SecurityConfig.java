@@ -84,6 +84,9 @@ public class SecurityConfig {
                         // User management - Admin only
                         .requestMatchers("/api/users/all", "/api/users/delete/**", "/api/users/status/**")
                             .hasRole("ADMIN")
+
+                        .requestMatchers("/api/notifications/admin/**")
+                            .hasRole("ADMIN")
                         
                         // All other requests need authentication
                         .anyRequest().authenticated()

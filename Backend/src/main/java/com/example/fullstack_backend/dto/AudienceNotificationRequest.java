@@ -1,0 +1,45 @@
+package com.example.fullstack_backend.dto;
+
+import java.util.List;
+
+import com.example.fullstack_backend.model.NotificationType;
+import com.example.fullstack_backend.model.Role;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class AudienceNotificationRequest {
+
+    @NotBlank(message = "Title is required")
+    @Size(max = 150, message = "Title cannot exceed 150 characters")
+    private String title;
+
+    @NotBlank(message = "Message is required")
+    @Size(max = 1200, message = "Message cannot exceed 1200 characters")
+    private String message;
+
+    private NotificationType type = NotificationType.INFO;
+
+    @Size(max = 255, message = "Action URL cannot exceed 255 characters")
+    private String actionUrl;
+
+    @NotNull(message = "Audience type is required")
+    private AudienceType audienceType;
+
+    private List<Role> roles;
+
+    private List<Long> userIds;
+
+    public enum AudienceType {
+        ALL_USERS,
+        SPECIFIC_ROLE,
+        SPECIFIC_USERS
+    }
+}

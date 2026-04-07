@@ -16,10 +16,17 @@ const Login = () => {
   const [touched, setTouched] = useState({});
   const [otpStep, setOtpStep] = useState(false);
   const [challengeUser, setChallengeUser] = useState('');
-  const [challengePhone, setChallengePhone] = useState('');
+  const [challengeEmail, setChallengeEmail] = useState('');
 
-  const { login, verifyLoginOtp, loginWithGoogle } = useAuth();
+  const { login, verifyLoginOtp, loginWithGoogle, user } = useAuth();
   const navigate = useNavigate();
+
+  const getPostLoginRoute = (role) => {
+    const normalizedRole = (role || user?.role || '').toUpperCase();
+    return ['STUDENT', 'USER'].includes(normalizedRole)
+      ? '/dashboard?tab=profile'
+      : '/dashboard';
+  };
 
   const handleGoogleSuccess = async (credentialResponse) => {
     if (!credentialResponse?.credential) {
@@ -29,9 +36,9 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await loginWithGoogle(credentialResponse.credential);
+      const result = await loginWithGoogle(credentialResponse.credential);
       toast.success('Signed in with Google');
-      navigate('/dashboard');
+      navigate(getPostLoginRoute(result?.role));
     } catch (error) {
       toast.error(error.response?.data?.message || 'Google login failed');
     } finally {
@@ -100,9 +107,11 @@ const Login = () => {
     return isValid;
   };
 
-  const maskPhone = (phone) => {
-    if (!phone || phone.length < 4) return '******';
-    return `******${phone.slice(-4)}`;
+  const maskEmail = (email) => {
+    if (!email || !email.includes('@')) return 'your registered email';
+    const [local, domain] = email.split('@');
+    const prefix = local.length <= 2 ? local.charAt(0) : local.slice(0, 2);
+    return `${prefix}***@${domain}`;
   };
 
   const handleSubmit = async (e) => {
@@ -118,22 +127,22 @@ const Login = () => {
         if (result?.otpRequired) {
           setOtpStep(true);
           setChallengeUser(result.username || formData.username);
-          setChallengePhone(maskPhone(result.phoneNumber));
+          setChallengeEmail(maskEmail(result.email));
           setFormData((prev) => ({ ...prev, otp: '' }));
           setTouched({});
           setErrors({});
-          toast.success('OTP sent to your registered phone number');
+          toast.success('OTP sent to your registered email');
         } else if (result?.token) {
           toast.success('Welcome back!');
-          navigate('/dashboard');
+          navigate(getPostLoginRoute(result?.role));
         }
       } else {
-        await verifyLoginOtp({
+        const verified = await verifyLoginOtp({
           username: challengeUser || formData.username,
           otp: formData.otp.trim(),
         });
         toast.success('Login successful');
-        navigate('/dashboard');
+        navigate(getPostLoginRoute(verified?.role));
       }
     } catch (error) {
       const errorData = error.response?.data;
@@ -213,7 +222,7 @@ const Login = () => {
               <h2 className="text-3xl font-bold text-slate-900">{otpStep ? 'Verify OTP' : 'Sign In'}</h2>
               <p className="mt-1 text-sm text-slate-500">
                 {otpStep
-                  ? `Enter the 6-digit code sent to ${challengePhone || 'your registered phone'}`
+                  ? `Enter the 6-digit code sent to ${challengeEmail || 'your registered email'}`
                   : 'Welcome back. Continue to your account.'}
               </p>
             </div>
@@ -345,7 +354,9 @@ const Login = () => {
                 <div className="flex justify-center">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
-                    onError={() => toast.error('Google login cancelled or failed')}
+                    onError={() =>
+                      toast.error('Google sign-in failed. Check OAuth Authorized JavaScript origins for this client ID (e.g. http://localhost:5173).')
+                    }
                     useOneTap={false}
                     theme="outline"
                     size="large"

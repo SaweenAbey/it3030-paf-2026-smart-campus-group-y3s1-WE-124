@@ -50,10 +50,31 @@ export const authAPI = {
 export const userAPI = {
   getProfile: (id) => api.get(`/users/${id}`),
   updateProfile: (id, data) => api.put(`/users/${id}`, data),
-  getAllUsers: () => api.get('/users'),
+  getAllUsers: () => api.get('/users/all'),
   getCurrentUser: () => api.get('/users/me'),
+  getUsersByRole: (role) => api.get(`/users/role/${role}`),
+  getActiveUsers: () => api.get('/users/active'),
+  getPendingTutors: () => api.get('/users/pending-tutors'),
+  approveTutor: (id) => api.patch(`/users/approve-tutor/${id}`),
   updateProfileImage: (id, profileImageUrl) => api.patch(`/users/${id}/image`, { profileImageUrl }),
   deleteProfileImage: (id) => api.delete(`/users/${id}/image`),
+  createAdminUser: (userData) => api.post('/users/create-admin-user', userData),
+  updateActiveStatus: (id, isActive) =>
+    api.patch(`/users/status/${id}`, null, { params: { isActive } }),
+};
+
+// Notification API calls
+export const notificationAPI = {
+  getAllForAdmin: () => api.get('/notifications/admin/all'),
+  getMyNotifications: (unreadOnly = false) => api.get('/notifications/me', { params: { unreadOnly } }),
+  getUnreadCount: () => api.get('/notifications/me/unread-count'),
+  markAsRead: (id) => api.patch(`/notifications/${id}/read`),
+  markAllAsRead: () => api.patch('/notifications/me/read-all'),
+  deleteNotification: (id) => api.delete(`/notifications/${id}`),
+  createForUser: (userId, notification) => api.post(`/notifications/user/${userId}`, notification),
+  createByAudience: (notification) => api.post('/notifications/audience', notification),
+  createForRole: (role, notification) => api.post(`/notifications/role/${role}`, notification),
+  broadcastToAll: (notification) => api.post('/notifications/broadcast', notification),
 };
 
 export default api;

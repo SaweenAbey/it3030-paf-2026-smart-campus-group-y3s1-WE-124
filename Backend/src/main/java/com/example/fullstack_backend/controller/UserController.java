@@ -2,6 +2,7 @@ package com.example.fullstack_backend.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +16,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.fullstack_backend.dto.AuthResponse;
 import com.example.fullstack_backend.dto.RegisterRequest;
 import com.example.fullstack_backend.dto.UserResponse;
 import com.example.fullstack_backend.model.Role;
@@ -47,6 +50,15 @@ public class UserController {
         return ResponseEntity.ok(userService.getCurrentUser(username));
     }
 
+    // Create new Admin or Technician account - Admin only
+    @PostMapping("/create-admin-user")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AuthResponse> createAdminUser(@Valid @RequestBody RegisterRequest request) {
+        logger.info("Admin creating new user: {} with role: {}", request.getUsername(), request.getRole());
+        AuthResponse response = userService.createAdminUser(request);
+        return ResponseEntity.ok(response);
+    }
+
     // Get all users - Admin only
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN')")
@@ -69,6 +81,27 @@ public class UserController {
     public ResponseEntity<List<UserResponse>> getActiveUsers() {
         logger.info("Admin fetching active users");
         return ResponseEntity.ok(userService.getActiveUsers());
+    }
+
+    // Get pending tutor registration requests - Admin only
+    @GetMapping("/pending-tutors")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getPendingTutors() {
+        logger.info("Admin fetching pending tutor registrations");
+        List<UserResponse> pendingTutors = userService.getUsersByRole(Role.TEACHER)
+                .stream()
+                .filter(user -> !Boolean.TRUE.equals(user.getIsActive()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(pendingTutors);
+    }
+
+    // Approve tutor registration request - Admin only
+    @PatchMapping("/approve-tutor/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> approveTutor(@PathVariable Long id) {
+        logger.info("Admin approving tutor request for user id: {}", id);
+        userService.updateActiveStatus(id, true);
+        return ResponseEntity.ok(Map.of("message", "Tutor account approved successfully"));
     }
 
     // Update user by ID

@@ -19,6 +19,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     long countByRecipientUsernameAndIsRead(String username, Boolean isRead);
 
+    List<Notification> findAllByOrderByCreatedAtDesc();
+
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true, n.readAt = CURRENT_TIMESTAMP WHERE n.recipient.username = :username AND n.isRead = false")
     int markAllAsReadByUsername(@Param("username") String username);

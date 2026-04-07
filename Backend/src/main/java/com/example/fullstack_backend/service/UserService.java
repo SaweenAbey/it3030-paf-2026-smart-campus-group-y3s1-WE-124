@@ -15,6 +15,8 @@ import com.example.fullstack_backend.model.User;
 public interface UserService {
 
     AuthResponse register(RegisterRequest request);
+    
+    AuthResponse createAdminUser(RegisterRequest request);
 
     AuthResponse login(LoginRequest request);
 

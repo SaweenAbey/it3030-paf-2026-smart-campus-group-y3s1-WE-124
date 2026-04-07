@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.fullstack_backend.dto.AudienceNotificationRequest;
 import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
 import com.example.fullstack_backend.dto.CreateNotificationRequest;
 import com.example.fullstack_backend.dto.NotificationResponse;
@@ -108,6 +109,48 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public List<NotificationResponse> createByAudience(String creatorUsername, AudienceNotificationRequest request) {
+        List<User> recipients = null;
+
+        if (request.getAudienceType() == AudienceNotificationRequest.AudienceType.ALL_USERS) {
+            recipients = userRepository.findByIsActive(true);
+        } else if (request.getAudienceType() == AudienceNotificationRequest.AudienceType.SPECIFIC_ROLE) {
+            if (request.getRoles() == null || request.getRoles().isEmpty()) {
+                throw new IllegalArgumentException("Roles must be provided for SPECIFIC_ROLE audience type");
+            }
+            recipients = userRepository.findByRoleInAndIsActive(request.getRoles(), true);
+        } else if (request.getAudienceType() == AudienceNotificationRequest.AudienceType.SPECIFIC_USERS) {
+            if (request.getUserIds() == null || request.getUserIds().isEmpty()) {
+                throw new IllegalArgumentException("User IDs must be provided for SPECIFIC_USERS audience type");
+            }
+            recipients = userRepository.findByIdInAndIsActive(request.getUserIds(), true);
+        }
+
+        if (recipients == null || recipients.isEmpty()) {
+            throw new ResourceNotFoundException("No active users found matching the specified audience criteria");
+        }
+
+        User createdBy = getCreatorIfPresent(creatorUsername);
+
+        List<Notification> notifications = recipients.stream()
+                .map(user -> Notification.builder()
+                        .title(request.getTitle())
+                        .message(request.getMessage())
+                        .type(request.getType() == null ? com.example.fullstack_backend.model.NotificationType.INFO : request.getType())
+                        .actionUrl(request.getActionUrl())
+                        .recipient(user)
+                        .createdBy(createdBy)
+                        .isRead(false)
+                        .build())
+                .collect(Collectors.toList());
+
+        List<Notification> saved = notificationRepository.saveAll(notifications);
+        logger.info("Notification created for {} audience type with {} recipients by {}", 
+                request.getAudienceType(), saved.size(), creatorUsername);
+        return saved.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<NotificationResponse> getMyNotifications(String username, Boolean unreadOnly) {
         List<Notification> notifications = Boolean.TRUE.equals(unreadOnly)
@@ -115,6 +158,14 @@ public class NotificationServiceImpl implements NotificationService {
                 : notificationRepository.findByRecipientUsernameOrderByCreatedAtDesc(username);
 
         return notifications.stream().map(this::mapToResponse).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<NotificationResponse> getAllNotificationsForAdmin() {
+        return notificationRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -185,6 +236,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .recipientId(recipient.getId())
                 .recipientUsername(recipient.getUsername())
                 .recipientName(recipient.getName())
+                .recipientRole(recipient.getRole())
                 .createdById(createdBy != null ? createdBy.getId() : null)
                 .createdByUsername(createdBy != null ? createdBy.getUsername() : null)
                 .build();

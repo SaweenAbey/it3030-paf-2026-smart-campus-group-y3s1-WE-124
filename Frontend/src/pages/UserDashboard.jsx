@@ -6,9 +6,10 @@ import Sidebar from '../components/Sidebar';
 const UserDashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'overview';
+  const activeTab = searchParams.get('tab') || 'profile';
 
   const sidebarItems = [
+    { key: 'profile', label: 'My Profile', icon: '👤' },
     { key: 'overview', label: 'Overview', icon: '📚' },
     { key: 'courses', label: 'My Courses', icon: '🎓' },
     { key: 'assignments', label: 'Assignments', icon: '📝' },
@@ -34,6 +35,39 @@ const UserDashboard = () => {
   );
 
   const renderContent = () => {
+    if (activeTab === 'profile') {
+      return (
+        <SectionCard title="My Profile" subtitle="Your account information and student details.">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Full Name</p>
+              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.name || 'Not provided'}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Username</p>
+              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.username || 'Not provided'}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Email</p>
+              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.email || 'Not provided'}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Role</p>
+              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.role || 'STUDENT'}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Department</p>
+              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.department || 'Not provided'}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Campus ID</p>
+              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.campusId || 'Not provided'}</p>
+            </div>
+          </div>
+        </SectionCard>
+      );
+    }
+
     if (activeTab === 'courses') {
       return (
         <SectionCard title="My Courses" subtitle="View all your enrolled courses.">

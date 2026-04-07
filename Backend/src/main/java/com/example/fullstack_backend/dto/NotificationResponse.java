@@ -3,6 +3,7 @@ package com.example.fullstack_backend.dto;
 import java.time.LocalDateTime;
 
 import com.example.fullstack_backend.model.NotificationType;
+import com.example.fullstack_backend.model.Role;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,8 @@ public class NotificationResponse {
     private Long recipientId;
     private String recipientUsername;
     private String recipientName;
+
+    private Role recipientRole;
 
     private Long createdById;
     private String createdByUsername;

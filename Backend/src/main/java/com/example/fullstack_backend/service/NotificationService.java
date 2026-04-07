@@ -2,6 +2,7 @@ package com.example.fullstack_backend.service;
 
 import java.util.List;
 
+import com.example.fullstack_backend.dto.AudienceNotificationRequest;
 import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
 import com.example.fullstack_backend.dto.CreateNotificationRequest;
 import com.example.fullstack_backend.dto.NotificationResponse;
@@ -15,7 +16,11 @@ public interface NotificationService {
 
     List<NotificationResponse> createForAllUsers(String creatorUsername, BroadcastNotificationRequest request);
 
+    List<NotificationResponse> createByAudience(String creatorUsername, AudienceNotificationRequest request);
+
     List<NotificationResponse> getMyNotifications(String username, Boolean unreadOnly);
+
+    List<NotificationResponse> getAllNotificationsForAdmin();
 
     long getUnreadCount(String username);
 
