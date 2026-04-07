@@ -37,7 +37,15 @@ public class EmailOtpService {
 
     public void sendLoginOtp(String username, String email, String otpCode) {
         if ("smtp".equalsIgnoreCase(emailProvider)) {
-            sendViaSmtp(username, email, otpCode);
+            try {
+                sendViaSmtp(username, email, otpCode);
+            } catch (IllegalStateException ex) {
+                if (!allowLogFallback) {
+                    throw ex;
+                }
+                logger.warn("SMTP OTP delivery unavailable ({}). Falling back to LOG provider for development.", ex.getMessage());
+                logOtp(username, email, otpCode);
+            }
             return;
         }
 
@@ -50,8 +58,7 @@ public class EmailOtpService {
                     "OTP email is in LOG mode. Set OTP_EMAIL_PROVIDER=smtp and configure spring.mail settings");
         }
 
-        logger.warn("OTP email provider is LOG mode. No real email will be sent.");
-        logger.info("DEV OTP generated. username={}, email={}, otp={}", username, maskEmail(email), otpCode);
+        logOtp(username, email, otpCode);
     }
 
     private void sendViaSmtp(String username, String email, String otpCode) {
@@ -122,5 +129,10 @@ public class EmailOtpService {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private void logOtp(String username, String email, String otpCode) {
+        logger.warn("OTP email provider is LOG mode. No real email will be sent.");
+        logger.info("DEV OTP generated. username={}, email={}, otp={}", username, maskEmail(email), otpCode);
     }
 }

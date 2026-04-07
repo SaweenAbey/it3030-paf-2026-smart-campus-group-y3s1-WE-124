@@ -20,6 +20,8 @@ public interface NotificationService {
 
     List<NotificationResponse> getMyNotifications(String username, Boolean unreadOnly);
 
+    List<NotificationResponse> getAllNotificationsForAdmin();
+
     long getUnreadCount(String username);
 
     NotificationResponse markAsRead(Long notificationId, String username);

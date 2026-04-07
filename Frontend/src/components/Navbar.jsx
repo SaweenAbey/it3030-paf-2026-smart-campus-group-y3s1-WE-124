@@ -1,11 +1,21 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 import toast from 'react-hot-toast';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const userInitials = (user?.name || user?.username || 'U')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
+  const profileImageUrl = (user?.profileImageUrl || '').trim();
+  const hasProfileImage = /^https?:\/\//i.test(profileImageUrl);
 
   const navLinks = [
     { label: 'Home', to: '/' },
@@ -101,36 +111,27 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Notifications"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 text-slate-600 transition duration-300 hover:bg-white/30 hover:text-slate-900 hover:border-white/50 backdrop-blur-sm"
-          >
-            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8">
-              <path d="M14.5 18a2.5 2.5 0 0 1-5 0" strokeLinecap="round" strokeLinejoin="round" />
-              <path
-                d="M18 9.5a6 6 0 1 0-12 0c0 6-2 6-2 7.5h16c0-1.5-2-1.5-2-7.5Z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          <NotificationBell />
 
           {isAuthenticated() ? (
             <>
-              {['ADMIN', 'TEACHER', 'TECHNICIAN'].includes(user?.role) && (
-                <Link
-                  to="/notifications/create"
-                  className="hidden rounded-full px-4 py-2 text-sm font-medium bg-gradient-to-r from-blue-500 to-cyan-500 text-white transition duration-300 hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-xl border border-white/20 backdrop-blur-sm sm:block"
-                >
-                  📢 Notify
-                </Link>
-              )}
               <button
                 onClick={() => navigate('/dashboard?tab=profile')}
-                className="hidden rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition duration-300 hover:bg-white/30 hover:text-slate-900 border border-white/30 backdrop-blur-sm hover:border-white/50 sm:block"
+                className="hidden items-center gap-2 rounded-full border border-white/30 px-2.5 py-1.5 text-sm font-medium text-slate-600 transition duration-300 hover:bg-white/30 hover:text-slate-900 backdrop-blur-sm hover:border-white/50 sm:flex"
               >
-                {user?.name?.split(' ')[0] || 'Profile'}
+                {hasProfileImage ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="Profile"
+                    className="h-8 w-8 rounded-full border border-white/50 object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-700 to-blue-500 text-xs font-bold text-white">
+                    {userInitials || 'U'}
+                  </span>
+                )}
+                <span className="max-w-24 truncate">{user?.name?.split(' ')[0] || 'Profile'}</span>
               </button>
               <button
                 onClick={handleLogout}

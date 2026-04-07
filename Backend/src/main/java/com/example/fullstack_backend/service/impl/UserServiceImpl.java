@@ -65,6 +65,17 @@ public class UserServiceImpl implements UserService {
     public AuthResponse register(RegisterRequest request) {
         logger.info("Registering new user: {} with email: {}", request.getUsername(), request.getEmail());
 
+        Role requestedRole = request.getRole() != null ? request.getRole() : Role.STUDENT;
+
+        // Public registration allowed for STUDENT/TEACHER/ADMIN.
+        // TECHNICIAN and MANAGER must still be created by an ADMIN.
+        if (requestedRole != Role.STUDENT && requestedRole != Role.TEACHER && requestedRole != Role.ADMIN) {
+            throw new IllegalArgumentException(
+                "Only STUDENT, TEACHER, and ADMIN registrations are allowed from public signup. "
+                    + "Contact administrator for TECHNICIAN or MANAGER accounts."
+            );
+        }
+
         // Check if username already exists
         if (userRepository.existsByUsername(request.getUsername())) {
             logger.warn("Registration failed: Username already exists: {}", request.getUsername());
@@ -84,6 +95,8 @@ public class UserServiceImpl implements UserService {
         }
 
         // Create new user
+        boolean tutorPendingApproval = requestedRole == Role.TEACHER;
+
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
@@ -95,9 +108,9 @@ public class UserServiceImpl implements UserService {
                 .campusId(request.getCampusId())
                 .department(request.getDepartment())
                 .specialization(request.getSpecialization())
-                .role(request.getRole() != null ? request.getRole() : Role.STUDENT)
+                .role(requestedRole)
                 .profileImageUrl(request.getProfileImageUrl())
-                .isActive(true)
+                .isActive(!tutorPendingApproval)
                 .isEmailVerified(false)
                 .loginAttempts(0)
                 .build();
@@ -106,7 +119,83 @@ public class UserServiceImpl implements UserService {
         logger.info("User registered successfully: {} (ID: {}, Role: {})", 
                     savedUser.getUsername(), savedUser.getId(), savedUser.getRole());
 
-        // Generate JWT token
+        String token = null;
+        if (savedUser.getIsActive()) {
+            token = jwtUtil.generateToken(savedUser);
+        }
+
+        return AuthResponse.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .userId(savedUser.getId())
+                .username(savedUser.getUsername())
+                .name(savedUser.getName())
+                .email(savedUser.getEmail())
+                .phoneNumber(savedUser.getPhoneNumber())
+                .department(savedUser.getDepartment())
+                .campusId(savedUser.getCampusId())
+                .role(savedUser.getRole())
+                .isEmailVerified(savedUser.getIsEmailVerified())
+                .profileImageUrl(savedUser.getProfileImageUrl())
+                .expiresAt(token != null ? jwtUtil.getExpirationDateTime(token) : null)
+                .message(tutorPendingApproval
+                    ? "Tutor registration submitted. Wait for admin approval before login"
+                    : "User registered successfully")
+                .build();
+    }
+
+    @Override
+    public AuthResponse createAdminUser(RegisterRequest request) {
+        logger.info("Admin creating user: {} with email: {} and role: {}", 
+                    request.getUsername(), request.getEmail(), request.getRole());
+
+        Role requestedRole = request.getRole() != null ? request.getRole() : Role.STUDENT;
+        if (requestedRole != Role.STUDENT && requestedRole != Role.TEACHER && requestedRole != Role.TECHNICIAN) {
+            throw new IllegalArgumentException(
+                    "Admin can only create STUDENT, TUTOR (TEACHER), or TECHNICIAN accounts via this endpoint.");
+        }
+
+        // Check if username already exists
+        if (userRepository.existsByUsername(request.getUsername())) {
+            logger.warn("Admin user creation failed: Username already exists: {}", request.getUsername());
+            throw new UserAlreadyExistsException("Username already exists: " + request.getUsername());
+        }
+
+        // Check if email already exists
+        if (userRepository.existsByEmail(request.getEmail())) {
+            logger.warn("Admin user creation failed: Email already exists: {}", request.getEmail());
+            throw new UserAlreadyExistsException("Email already exists: " + request.getEmail());
+        }
+
+        // Validate password confirmation
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            logger.warn("Admin user creation failed: Password mismatch for user: {}", request.getUsername());
+            throw new IllegalArgumentException("Password and confirm password do not match");
+        }
+
+        // Admin-created accounts are active immediately (including tutors created by admin)
+        User user = User.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .phoneNumber(request.getPhoneNumber())
+                .address(request.getAddress())
+                .age(request.getAge())
+                .campusId(request.getCampusId())
+                .department(request.getDepartment())
+                .specialization(request.getSpecialization())
+                .role(requestedRole)
+                .profileImageUrl(request.getProfileImageUrl())
+                .isActive(true)  // Admin/Technician accounts are active by default
+                .isEmailVerified(false)
+                .loginAttempts(0)
+                .build();
+
+        User savedUser = userRepository.save(user);
+        logger.info("Admin user created successfully: {} (ID: {}, Role: {})", 
+                    savedUser.getUsername(), savedUser.getId(), savedUser.getRole());
+
         String token = jwtUtil.generateToken(savedUser);
 
         return AuthResponse.builder()
@@ -123,13 +212,24 @@ public class UserServiceImpl implements UserService {
                 .isEmailVerified(savedUser.getIsEmailVerified())
                 .profileImageUrl(savedUser.getProfileImageUrl())
                 .expiresAt(jwtUtil.getExpirationDateTime(token))
-                .message("User registered successfully")
+                .message("Account created successfully: " + requestedRole.name())
                 .build();
     }
 
     @Override
     public AuthResponse login(LoginRequest request) {
         logger.info("User login attempt: {}", request.getUsername());
+
+        Optional<User> preAuthUserOpt = userRepository.findByUsername(request.getUsername());
+        if (preAuthUserOpt.isPresent()) {
+            User preAuthUser = preAuthUserOpt.get();
+            if (preAuthUser.getRole() == Role.TEACHER && !Boolean.TRUE.equals(preAuthUser.getIsActive())) {
+                throw new IllegalArgumentException("Tutor account is pending admin approval");
+            }
+            if (preAuthUser.getRole() != Role.TEACHER && !Boolean.TRUE.equals(preAuthUser.getIsActive())) {
+                throw new IllegalArgumentException("Account is inactive. Please contact admin");
+            }
+        }
 
         try {
             Authentication authentication = authenticationManager.authenticate(
@@ -292,7 +392,13 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Google account email is missing");
         }
 
+        String googlePicture = payload.get("picture") != null ? payload.get("picture").toString() : null;
+
         User user = userRepository.findByEmail(email).orElseGet(() -> createGoogleUser(payload));
+        if ((user.getProfileImageUrl() == null || user.getProfileImageUrl().isBlank())
+                && googlePicture != null && !googlePicture.isBlank()) {
+            user.setProfileImageUrl(googlePicture);
+        }
 
         user.setIsEmailVerified(true);
         user.setLastLogin(LocalDateTime.now());
@@ -535,7 +641,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private boolean requiresOtp(Role role) {
-        return role == Role.STUDENT || role == Role.TEACHER;
+        return role == Role.ADMIN;
     }
 
 }

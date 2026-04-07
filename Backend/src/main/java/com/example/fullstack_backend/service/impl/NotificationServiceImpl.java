@@ -162,6 +162,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<NotificationResponse> getAllNotificationsForAdmin() {
+        return notificationRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public long getUnreadCount(String username) {
         return notificationRepository.countByRecipientUsernameAndIsRead(username, false);
     }
@@ -228,6 +236,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .recipientId(recipient.getId())
                 .recipientUsername(recipient.getUsername())
                 .recipientName(recipient.getName())
+                .recipientRole(recipient.getRole())
                 .createdById(createdBy != null ? createdBy.getId() : null)
                 .createdByUsername(createdBy != null ? createdBy.getUsername() : null)
                 .build();

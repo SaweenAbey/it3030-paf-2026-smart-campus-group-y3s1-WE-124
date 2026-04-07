@@ -48,6 +48,13 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getMyNotifications(username, unreadOnly));
     }
 
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<NotificationResponse>> getAllNotificationsForAdmin() {
+        logger.info("Admin fetching all notifications");
+        return ResponseEntity.ok(notificationService.getAllNotificationsForAdmin());
+    }
+
     @GetMapping("/me/unread-count")
     public ResponseEntity<Map<String, Long>> getMyUnreadCount() {
         String username = getCurrentUsername();

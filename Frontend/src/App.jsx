@@ -6,10 +6,20 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import AdminLogin from './pages/AdminLogin';
+import RoleSelector from './pages/RoleSelector';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Bookings from './pages/Bookings';
 import NotificationCreate from './pages/NotificationCreate';
+
+const getDefaultRouteByRole = (role) => {
+  const normalizedRole = (role || '').toUpperCase();
+  return ['STUDENT', 'USER'].includes(normalizedRole)
+    ? '/dashboard?tab=profile'
+    : '/dashboard';
+};
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -26,9 +36,9 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/login" />;
 };
 
-// Public Route Component (redirect to home if already logged in)
-const PublicRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+// Admin Protected Route Component
+const AdminProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
 
   if (loading) {
     return (
@@ -38,18 +48,44 @@ const PublicRoute = ({ children }) => {
     );
   }
 
-  return isAuthenticated() ? <Navigate to="/dashboard" /> : children;
+  if (!isAuthenticated()) {
+    return <Navigate to="/admin-login" />;
+  }
+
+  if (user?.role !== 'ADMIN' && user?.role !== 'TECHNICIAN') {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return children;
+};
+
+// Public Route Component (redirect to home if already logged in)
+const PublicRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#38bdf8] border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  return isAuthenticated()
+    ? <Navigate to={getDefaultRouteByRole(user?.role)} replace />
+    : children;
 };
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = ['/login', '/signup'].includes(location.pathname);
+  const hideNavbar = ['/login', '/admin-login', '/signup', '/role-selector'].includes(location.pathname);
 
   return (
     <div className="App">
       {!hideNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/role-selector" element={<RoleSelector />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route
           path="/dashboard"
@@ -57,6 +93,14 @@ function AppContent() {
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin-dashboard"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboard />
+            </AdminProtectedRoute>
           }
         />
         <Route
@@ -72,6 +116,14 @@ function AppContent() {
           element={
             <PublicRoute>
               <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/adminlog"
+          element={
+            <PublicRoute>
+              <AdminLogin />
             </PublicRoute>
           }
         />

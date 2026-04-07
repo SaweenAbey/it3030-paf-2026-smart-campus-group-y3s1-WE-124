@@ -18,8 +18,15 @@ const Login = () => {
   const [challengeUser, setChallengeUser] = useState('');
   const [challengeEmail, setChallengeEmail] = useState('');
 
-  const { login, verifyLoginOtp, loginWithGoogle } = useAuth();
+  const { login, verifyLoginOtp, loginWithGoogle, user } = useAuth();
   const navigate = useNavigate();
+
+  const getPostLoginRoute = (role) => {
+    const normalizedRole = (role || user?.role || '').toUpperCase();
+    return ['STUDENT', 'USER'].includes(normalizedRole)
+      ? '/dashboard?tab=profile'
+      : '/dashboard';
+  };
 
   const handleGoogleSuccess = async (credentialResponse) => {
     if (!credentialResponse?.credential) {
@@ -29,9 +36,9 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await loginWithGoogle(credentialResponse.credential);
+      const result = await loginWithGoogle(credentialResponse.credential);
       toast.success('Signed in with Google');
-      navigate('/dashboard');
+      navigate(getPostLoginRoute(result?.role));
     } catch (error) {
       toast.error(error.response?.data?.message || 'Google login failed');
     } finally {
@@ -127,15 +134,15 @@ const Login = () => {
           toast.success('OTP sent to your registered email');
         } else if (result?.token) {
           toast.success('Welcome back!');
-          navigate('/dashboard');
+          navigate(getPostLoginRoute(result?.role));
         }
       } else {
-        await verifyLoginOtp({
+        const verified = await verifyLoginOtp({
           username: challengeUser || formData.username,
           otp: formData.otp.trim(),
         });
         toast.success('Login successful');
-        navigate('/dashboard');
+        navigate(getPostLoginRoute(verified?.role));
       }
     } catch (error) {
       const errorData = error.response?.data;
@@ -347,7 +354,9 @@ const Login = () => {
                 <div className="flex justify-center">
                   <GoogleLogin
                     onSuccess={handleGoogleSuccess}
-                    onError={() => toast.error('Google login cancelled or failed')}
+                    onError={() =>
+                      toast.error('Google sign-in failed. Check OAuth Authorized JavaScript origins for this client ID (e.g. http://localhost:5173).')
+                    }
                     useOneTap={false}
                     theme="outline"
                     size="large"

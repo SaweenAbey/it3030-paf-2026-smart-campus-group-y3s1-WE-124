@@ -27,6 +27,12 @@ const Home = () => {
 
   const heroTilt = useMemo(() => clamp(scrollY * 0.03, 0, 12), [scrollY]);
   const heroLift = useMemo(() => clamp(scrollY * 0.15, 0, 40), [scrollY]);
+  const dashboardPath = useMemo(() => {
+    const normalizedRole = (user?.role || '').toUpperCase();
+    return ['STUDENT', 'USER'].includes(normalizedRole)
+      ? '/dashboard?tab=profile'
+      : '/dashboard';
+  }, [user?.role]);
 
   const features = [
     {
@@ -113,7 +119,7 @@ const Home = () => {
                 {isAuthenticated() ? (
                   <>
                     <Link
-                      to="/dashboard"
+                      to={dashboardPath}
                       className="rounded-2xl bg-slate-900 px-7 py-3 font-semibold text-white transition hover:bg-slate-800"
                     >
                       Open Dashboard
