@@ -2,31 +2,34 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+import uni360Logo from '../assets/uni360-logo.svg';
+import libImg from '../assets/lib.jpg';
+import sliitImg from '../assets/sliit.jpg';
+import sliit2Img from '../assets/sliit2.jpg';
+import sliit3Img from '../assets/sliit3.jpg';
+import sliitLibImg from '../assets/sliitlib.jpg';
+import sliitLibAltImg from '../assets/sliitlib.png';
+
 const Home = () => {
   const { user, isAuthenticated } = useAuth();
-  const [scrollY, setScrollY] = useState(0);
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  const slides = useMemo(() => ([
+    { src: sliitImg, alt: 'University campus building exterior' },
+    { src: libImg, alt: 'University library and study spaces' },
+    { src: sliit2Img, alt: 'University facilities and learning spaces' },
+    { src: sliitLibImg, alt: 'University library building' },
+    { src: sliitLibAltImg, alt: 'University library interior and collections' },
+    { src: sliit3Img, alt: 'University campus operations and facilities' },
+  ]), []);
 
   useEffect(() => {
-    let ticking = false;
+    const id = window.setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % slides.length);
+    }, 4500);
+    return () => window.clearInterval(id);
+  }, [slides.length]);
 
-    const onScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setScrollY(window.scrollY || 0);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-  const heroTilt = useMemo(() => clamp(scrollY * 0.02, 0, 8), [scrollY]);
-  const heroLift = useMemo(() => clamp(scrollY * 0.1, 0, 28), [scrollY]);
   const roleKey = useMemo(() => (user?.role || '').toUpperCase(), [user?.role]);
   const dashboardPath = useMemo(() => {
     const normalizedRole = (user?.role || '').toUpperCase();
@@ -166,102 +169,72 @@ const Home = () => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e0f2fe,transparent_35%),radial-gradient(circle_at_bottom_left,#bae6fd,transparent_40%),#f8fafc]">
       <section className="relative overflow-hidden px-4 pb-20 pt-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-            <div>
-              <p className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-500 shadow-sm">
-                Smart Campus Operations
-              </p>
-              <h1 className="mt-5 text-5xl font-black leading-[1.05] text-slate-900 sm:text-6xl">
-                Smart Campus Operations Hub
-              </h1>
-              <p className="mt-6 max-w-xl text-lg text-slate-600">
-                One platform to manage <span className="font-semibold text-slate-900">bookings</span> (rooms, labs, equipment) and <span className="font-semibold text-slate-900">maintenance / incidents</span> (fault reports, technician updates, and resolutions) with role-based access and strong auditability.
-              </p>
-
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                {isAuthenticated() ? (
-                  <>
-                    <Link
-                      to={opsPath}
-                      className="rounded-2xl bg-slate-900 px-7 py-3 font-semibold text-white transition hover:bg-slate-800"
-                    >
-                      Open Operations
-                    </Link>
-                    <Link
-                      to="/bookings"
-                      className="rounded-2xl border border-slate-300 bg-white px-7 py-3 font-semibold text-slate-700 transition hover:border-slate-400"
-                    >
-                      Make a Booking
-                    </Link>
-                    <p className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm text-slate-600">
-                      Signed in as <span className="font-semibold text-slate-900">{user?.role}</span>
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/login"
-                      className="rounded-2xl bg-slate-900 px-7 py-3 font-semibold text-white transition hover:bg-slate-800"
-                    >
-                      Sign In
-                    </Link>
-                    <Link
-                      to="/signup"
-                      className="rounded-2xl border border-slate-300 bg-white px-7 py-3 font-semibold text-slate-700 transition hover:border-slate-400"
-                    >
-                      Create Account
-                    </Link>
-                    <Link
-                      to="/bookings"
-                      className="rounded-2xl border border-slate-300 bg-white px-7 py-3 font-semibold text-slate-700 transition hover:border-slate-400"
-                    >
-                      View Bookable Resources
-                    </Link>
-                  </>
-                )}
-              </div>
-
-              <div className="mt-10 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Designed for</p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Facilities, IT services, academic departments, and operations teams managing shared resources.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Operational guarantees</p>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Consistent workflows, permission boundaries, and a complete record of decisions and updates.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="[perspective:1200px]">
+          <div className="[perspective:1200px]">
               <div
-                className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_35px_80px_-35px_rgba(2,132,199,0.35)] transition-transform duration-300"
-                style={{
-                  transform: `translateY(${-heroLift}px) rotateX(${heroTilt}deg) rotateY(${-heroTilt * 0.45}deg)`,
-                }}
+                className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_35px_80px_-35px_rgba(2,132,199,0.35)] transition-transform duration-300"
               >
-                <div className="mb-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                  <p className="text-sm font-semibold text-slate-700">Operations Activity</p>
-                  <p className="text-xs font-semibold text-emerald-600">Tracked</p>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    '2 new room booking requests awaiting approval',
-                    'Fault report created for Lab A projector',
-                    'Technician updated incident: “In progress”',
-                    'Resolution recorded and ticket closed with timestamp',
-                  ].map((item) => (
-                    <div key={item} className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">
-                      {item}
-                    </div>
+                {/* Full-bleed image slider */}
+                <div className="relative h-[420px] sm:h-[520px] lg:h-[560px]">
+                  {slides.map((s, idx) => (
+                    <img
+                      key={s.src}
+                      src={s.src}
+                      alt={s.alt}
+                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                        idx === activeSlide ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      loading={idx === 0 ? 'eager' : 'lazy'}
+                    />
                   ))}
+
+                  {/* Overlays for readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/15 to-slate-950/10" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/35 via-transparent to-transparent" />
+
+                  {/* Hero text overlay */}
+                  <div className="absolute left-5 top-5 right-5">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white/90 backdrop-blur-md">
+                      Welcome to UNI 360
+                      <span className="h-1 w-1 rounded-full bg-white/60" />
+                      Operations Hub
+                    </div>
+                    <h2 className="mt-4 max-w-xl text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
+                      Smart University Operations Hub
+                    </h2>
+                    <p className="mt-3 max-w-xl text-sm text-white/85 sm:text-base">
+                      Bookings • Maintenance • Incidents • Audit trail
+                    </p>
+                  </div>
+
+                  {/* Dots */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-end">
+                    <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 backdrop-blur-md">
+                      {slides.map((_, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveSlide(idx)}
+                          className={`h-2.5 rounded-full transition-all ${
+                            idx === activeSlide ? 'w-8 bg-white' : 'w-2.5 bg-white/55 hover:bg-white/80'
+                          }`}
+                          aria-label={`Go to slide ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Scroll indicator */}
+                  <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white backdrop-blur-md animate-bounce">
+                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
           </div>
         </div>
       </section>
@@ -456,10 +429,10 @@ const Home = () => {
       <footer className="border-t border-slate-200 bg-white/80 px-4 py-10 backdrop-blur sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white">U</div>
+           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-lg font-bold text-white">U</div>
             <p className="font-semibold text-slate-900">UNI 360</p>
           </div>
-          <p className="text-sm text-slate-500">© 2026 UNI 360 Smart Campus Operations Hub</p>
+          <p className="text-sm text-slate-500">© 2026 UNI 360 Smart University Operations Hub</p>
         </div>
       </footer>
     </div>
