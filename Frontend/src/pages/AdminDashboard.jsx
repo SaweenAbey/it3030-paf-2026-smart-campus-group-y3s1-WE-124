@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { userAPI, notificationAPI } from '../services/api';
+import { adminAPI, notificationAPI, userAPI } from '../services/api';
 import AdminSkyStatusButton from '../components/AdminSkyStatusButton';
 import toast from 'react-hot-toast';
 
@@ -185,7 +185,7 @@ const AdminDashboard = () => {
 
     setLoading(true);
     try {
-      await userAPI.createAdminUser({
+      const payload = {
         name: createFormData.name,
         username: createFormData.username,
         email: createFormData.email,
@@ -195,7 +195,13 @@ const AdminDashboard = () => {
         phoneNumber: createFormData.phoneNumber,
         department: createFormData.department,
         specialization: createFormData.specialization,
-      });
+      };
+
+      if (createFormData.role === 'MANAGER') {
+        await adminAPI.createManager(payload);
+      } else {
+        await userAPI.createAdminUser(payload);
+      }
 
       toast.success(`${displayRole(createFormData.role)} account created successfully!`);
       resetCreateForm();
@@ -665,6 +671,7 @@ const AdminDashboard = () => {
                             <option value="STUDENT">Student</option>
                             <option value="TEACHER">Tutor</option>
                             <option value="TECHNICIAN">Technician</option>
+                            <option value="MANAGER">Manager</option>
                           </select>
                         </div>
                         <div>

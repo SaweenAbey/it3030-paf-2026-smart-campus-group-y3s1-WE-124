@@ -63,6 +63,17 @@ export const userAPI = {
     api.patch(`/users/status/${id}`, null, { params: { isActive } }),
 };
 
+// Admin API calls
+export const adminAPI = {
+  getDashboard: () => api.get('/admin/dashboard'),
+  getStats: () => api.get('/admin/stats'),
+  createManager: (userData) => api.post('/admin/create-manager', userData),
+  getAllManagers: () => api.get('/admin/managers'),
+  updateManagerStatus: (id, isActive) =>
+    api.patch(`/admin/manager/${id}/status`, null, { params: { isActive } }),
+  deleteManager: (id) => api.delete(`/admin/manager/${id}`),
+};
+
 // Notification API calls
 export const notificationAPI = {
   getAllForAdmin: () => api.get('/notifications/admin/all'),

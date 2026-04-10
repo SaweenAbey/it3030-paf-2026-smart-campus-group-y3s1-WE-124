@@ -4,6 +4,8 @@ import AdminDashboard from './AdminDashboard';
 import TeacherDashboard from './TeacherDashboard';
 import TechnicianDashboard from './TechnicianDashboard';
 import UserDashboard from './UserDashboard';
+import ManagerDashboard from  './ManagerDashboard';
+
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -18,6 +20,8 @@ const Dashboard = () => {
       return <TeacherDashboard />;
     case 'TECHNICIAN':
       return <TechnicianDashboard />;
+    case 'MANAGER':
+      return <ManagerDashboard />;
     case 'STUDENT':
     case 'USER':
     default:
