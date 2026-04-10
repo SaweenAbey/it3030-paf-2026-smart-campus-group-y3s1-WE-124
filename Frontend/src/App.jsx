@@ -7,10 +7,12 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
+import ManagerLogin from './pages/ManagerLogin';
 import RoleSelector from './pages/RoleSelector';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ManagerDashboard from './pages/ManagerDashboard';
 import Bookings from './pages/Bookings';
 import NotificationCreate from './pages/NotificationCreate';
 import Services from './pages/Services';
@@ -60,6 +62,29 @@ const AdminProtectedRoute = ({ children }) => {
   return children;
 };
 
+// Manager Protected Route Component
+const ManagerProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#38bdf8] border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated()) {
+    return <Navigate to="/manager-login" />;
+  }
+
+  if (user?.role !== 'MANAGER') {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return children;
+};
+
 // Public Route Component (redirect to home if already logged in)
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, loading, user } = useAuth();
@@ -79,7 +104,7 @@ const PublicRoute = ({ children }) => {
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = ['/login', '/admin-login', '/signup', '/role-selector'].includes(location.pathname);
+  const hideNavbar = ['/login', '/admin-login', '/manager-login', '/signup', '/role-selector'].includes(location.pathname);
 
   return (
     <div className="App">
@@ -106,6 +131,14 @@ function AppContent() {
           }
         />
         <Route
+          path="/manager-dashboard"
+          element={
+            <ManagerProtectedRoute>
+              <ManagerDashboard />
+            </ManagerProtectedRoute>
+          }
+        />
+        <Route
           path="/notifications/create"
           element={
             <ProtectedRoute>
@@ -126,6 +159,14 @@ function AppContent() {
           element={
             <PublicRoute>
               <AdminLogin />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/manager-login"
+          element={
+            <PublicRoute>
+              <ManagerLogin />
             </PublicRoute>
           }
         />

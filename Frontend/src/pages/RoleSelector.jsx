@@ -13,6 +13,14 @@ const RoleSelector = () => {
       path: '/login',
     },
     {
+      id: 'manager',
+      title: 'Manager Portal',
+      description: 'Manage bookings, maintenance, and technician assignments',
+      icon: '👨‍💼',
+      bgGradient: 'from-emerald-500 to-teal-500',
+      path: '/manager-login',
+    },
+    {
       id: 'admin',
       title: 'Admin Portal',
       description: 'Manage users, resources, and system configuration',
@@ -47,7 +55,7 @@ const RoleSelector = () => {
         </div>
 
         {/* Role cards */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-3">
           {roles.map((role) => (
             <button
               key={role.id}
