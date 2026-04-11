@@ -95,7 +95,8 @@ public class UserServiceImpl implements UserService {
         }
 
         // Create new user
-        boolean tutorPendingApproval = requestedRole == Role.TEACHER;
+        // Both STUDENT and TEACHER registrations require admin approval before activation
+        boolean requiresApproval = requestedRole == Role.TEACHER || requestedRole == Role.STUDENT;
 
         User user = User.builder()
                 .name(request.getName())
@@ -110,7 +111,7 @@ public class UserServiceImpl implements UserService {
                 .specialization(request.getSpecialization())
                 .role(requestedRole)
                 .profileImageUrl(request.getProfileImageUrl())
-                .isActive(!tutorPendingApproval)
+                .isActive(!requiresApproval)
                 .isEmailVerified(false)
                 .loginAttempts(0)
                 .build();
@@ -122,6 +123,17 @@ public class UserServiceImpl implements UserService {
         String token = null;
         if (savedUser.getIsActive()) {
             token = jwtUtil.generateToken(savedUser);
+        }
+
+        String message;
+        if (requiresApproval) {
+            if (requestedRole == Role.TEACHER) {
+                message = "Tutor registration submitted. Wait for admin approval before login";
+            } else {
+                message = "Student registration submitted. Wait for admin approval before login";
+            }
+        } else {
+            message = "User registered successfully";
         }
 
         return AuthResponse.builder()
@@ -138,9 +150,7 @@ public class UserServiceImpl implements UserService {
                 .isEmailVerified(savedUser.getIsEmailVerified())
                 .profileImageUrl(savedUser.getProfileImageUrl())
                 .expiresAt(token != null ? jwtUtil.getExpirationDateTime(token) : null)
-                .message(tutorPendingApproval
-                    ? "Tutor registration submitted. Wait for admin approval before login"
-                    : "User registered successfully")
+                .message(message)
                 .build();
     }
 
@@ -233,11 +243,14 @@ public class UserServiceImpl implements UserService {
         Optional<User> preAuthUserOpt = userRepository.findByUsername(request.getUsername());
         if (preAuthUserOpt.isPresent()) {
             User preAuthUser = preAuthUserOpt.get();
-            if (preAuthUser.getRole() == Role.TEACHER && !Boolean.TRUE.equals(preAuthUser.getIsActive())) {
-                throw new IllegalArgumentException("Tutor account is pending admin approval");
-            }
-            if (preAuthUser.getRole() != Role.TEACHER && !Boolean.TRUE.equals(preAuthUser.getIsActive())) {
-                throw new IllegalArgumentException("Account is inactive. Please contact admin");
+            if (!Boolean.TRUE.equals(preAuthUser.getIsActive())) {
+                if (preAuthUser.getRole() == Role.TEACHER) {
+                    throw new IllegalArgumentException("Tutor account is pending admin approval");
+                } else if (preAuthUser.getRole() == Role.STUDENT) {
+                    throw new IllegalArgumentException("Student account is pending admin approval");
+                } else {
+                    throw new IllegalArgumentException("Account is inactive. Please contact admin");
+                }
             }
         }
 

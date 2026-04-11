@@ -104,6 +104,27 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "Tutor account approved successfully"));
     }
 
+    // Get pending student registration requests - Admin only
+    @GetMapping("/pending-students")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> getPendingStudents() {
+        logger.info("Admin fetching pending student registrations");
+        List<UserResponse> pendingStudents = userService.getUsersByRole(Role.STUDENT)
+                .stream()
+                .filter(user -> !Boolean.TRUE.equals(user.getIsActive()))
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(pendingStudents);
+    }
+
+    // Approve student registration request - Admin only
+    @PatchMapping("/approve-student/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> approveStudent(@PathVariable Long id) {
+        logger.info("Admin approving student registration for user id: {}", id);
+        userService.updateActiveStatus(id, true);
+        return ResponseEntity.ok(Map.of("message", "Student account approved successfully"));
+    }
+
     // Update user by ID
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")

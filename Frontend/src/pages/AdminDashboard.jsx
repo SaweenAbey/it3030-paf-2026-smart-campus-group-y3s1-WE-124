@@ -70,6 +70,7 @@ const AdminDashboard = () => {
   const [userSection, setUserSection] = useState('all');
   const [users, setUsers] = useState([]);
   const [pendingTutors, setPendingTutors] = useState([]);
+  const [pendingStudents, setPendingStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusToggleId, setStatusToggleId] = useState(null);
@@ -130,6 +131,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     loadUsers();
     loadPendingTutors();
+    loadPendingStudents();
   }, []);
 
   useEffect(() => {
@@ -157,6 +159,15 @@ const AdminDashboard = () => {
       setPendingTutors(response.data || []);
     } catch (error) {
       console.error('Failed to load pending tutors:', error);
+    }
+  };
+
+  const loadPendingStudents = async () => {
+    try {
+      const response = await userAPI.getPendingStudents();
+      setPendingStudents(response.data || []);
+    } catch (error) {
+      console.error('Failed to load pending students:', error);
     }
   };
 
@@ -243,6 +254,17 @@ const AdminDashboard = () => {
       loadUsers();
     } catch (error) {
       toast.error('Failed to approve tutor');
+    }
+  };
+
+  const handleApproveStudent = async (studentId) => {
+    try {
+      await userAPI.approveStudent(studentId);
+      toast.success('Student account approved!');
+      loadPendingStudents();
+      loadUsers();
+    } catch (error) {
+      toast.error('Failed to approve student');
     }
   };
 
@@ -385,11 +407,12 @@ const AdminDashboard = () => {
 
   const activeUsers = users.filter((u) => u.isActive).length;
   const adminUsers = users.filter((u) => u.role === 'ADMIN').length;
+  const pendingAccounts = pendingTutors.length + pendingStudents.length;
 
   const stats = [
     { label: 'Total Users', value: users.length, tone: 'from-sky-500 to-sky-600' },
     { label: 'Active Accounts', value: activeUsers, tone: 'from-sky-400 to-cyan-500' },
-    { label: 'Pending Tutors', value: pendingTutors.length, tone: 'from-sky-600 to-sky-700' },
+    { label: 'Pending Approvals', value: pendingAccounts, tone: 'from-sky-600 to-sky-700' },
     { label: 'Admin Accounts', value: adminUsers, tone: 'from-slate-600 to-sky-700' },
   ];
 
@@ -528,7 +551,7 @@ const AdminDashboard = () => {
                           : 'bg-slate-100 text-slate-700 hover:bg-sky-50'
                       }`}
                     >
-                      Pending Tutors
+                      Pending Approvals
                     </button>
                     <button
                       onClick={() => setUserSection('create')}
@@ -620,29 +643,62 @@ const AdminDashboard = () => {
                   )}
 
                   {userSection === 'pending' && (
-                    <div className="space-y-4">
-                      {pendingTutors.length === 0 ? (
-                        <p className="text-slate-600">No pending tutor requests</p>
-                      ) : (
-                        pendingTutors.map((tutor) => (
-                          <div
-                            key={tutor.id}
-                            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
-                          >
-                            <div>
-                              <p className="font-semibold text-slate-900">{tutor.name}</p>
-                              <p className="text-sm text-slate-600">{tutor.email}</p>
-                              <p className="mt-1 text-xs text-slate-500">Username: {tutor.username}</p>
-                            </div>
-                            <button
-                              onClick={() => handleApproveTutor(tutor.id)}
-                              className="rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-sky-700 hover:to-sky-600"
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                          Pending Tutor Requests
+                        </h3>
+                        {pendingTutors.length === 0 ? (
+                          <p className="text-slate-600">No pending tutor requests</p>
+                        ) : (
+                          pendingTutors.map((tutor) => (
+                            <div
+                              key={tutor.id}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
                             >
-                              Approve Tutor
-                            </button>
-                          </div>
-                        ))
-                      )}
+                              <div>
+                                <p className="font-semibold text-slate-900">{tutor.name}</p>
+                                <p className="text-sm text-slate-600">{tutor.email}</p>
+                                <p className="mt-1 text-xs text-slate-500">Username: {tutor.username}</p>
+                              </div>
+                              <button
+                                onClick={() => handleApproveTutor(tutor.id)}
+                                className="rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-sky-700 hover:to-sky-600"
+                              >
+                                Approve Tutor
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      <div>
+                        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                          Pending Student Accounts
+                        </h3>
+                        {pendingStudents.length === 0 ? (
+                          <p className="text-slate-600">No pending student accounts</p>
+                        ) : (
+                          pendingStudents.map((student) => (
+                            <div
+                              key={student.id}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                            >
+                              <div>
+                                <p className="font-semibold text-slate-900">{student.name}</p>
+                                <p className="text-sm text-slate-600">{student.email}</p>
+                                <p className="mt-1 text-xs text-slate-500">Username: {student.username}</p>
+                              </div>
+                              <button
+                                onClick={() => handleApproveStudent(student.id)}
+                                className="rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-sky-700 hover:to-sky-600"
+                              >
+                                Approve Student
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
 
