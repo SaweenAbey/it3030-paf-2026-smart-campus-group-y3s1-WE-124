@@ -1,11 +1,23 @@
 package com.example.fullstack_backend.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.example.fullstack_backend.dto.AuthResponse;
 import com.example.fullstack_backend.dto.RegisterRequest;
@@ -14,8 +26,6 @@ import com.example.fullstack_backend.model.Role;
 import com.example.fullstack_backend.service.UserService;
 
 import jakarta.validation.Valid;
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -50,7 +60,7 @@ public class AdminController {
     public ResponseEntity<AuthResponse> createManagerAccount(@Valid @RequestBody RegisterRequest request) {
         logger.info("Admin creating new Manager account: {} with department: {}", request.getUsername(), request.getDepartment());
         request.setRole(Role.MANAGER);
-        AuthResponse response = userService.createAdminUser(request);
+        AuthResponse response = userService.createManagerUser(request);
         logger.info("Manager account created successfully for: {}", request.getUsername());
         return ResponseEntity.ok(response);
     }
