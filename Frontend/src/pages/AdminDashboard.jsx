@@ -247,8 +247,30 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    toast((t) => (
+      <div className="flex flex-col gap-3">
+        <p className="font-medium text-gray-800">Are you sure you want to logout?</p>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="rounded-md bg-gray-100 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              logout();
+              toast.success('Logged out successfully');
+              navigate('/login');
+            }}
+            className="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-red-700"
+          >
+            Yes, Logout
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const resetCreateForm = () => {

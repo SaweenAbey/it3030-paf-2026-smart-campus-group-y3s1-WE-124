@@ -155,25 +155,35 @@ public class UserServiceImpl implements UserService {
                     "Admin can only create STUDENT, TUTOR (TEACHER), or TECHNICIAN accounts via this endpoint.");
         }
 
+        return createPrivilegedUser(request, requestedRole, "Admin");
+    }
+
+    @Override
+    public AuthResponse createManagerUser(RegisterRequest request) {
+        logger.info("Admin creating manager: {} with email: {}", request.getUsername(), request.getEmail());
+
+        return createPrivilegedUser(request, Role.MANAGER, "Manager");
+    }
+
+    private AuthResponse createPrivilegedUser(RegisterRequest request, Role requestedRole, String label) {
         // Check if username already exists
         if (userRepository.existsByUsername(request.getUsername())) {
-            logger.warn("Admin user creation failed: Username already exists: {}", request.getUsername());
+            logger.warn("{} user creation failed: Username already exists: {}", label, request.getUsername());
             throw new UserAlreadyExistsException("Username already exists: " + request.getUsername());
         }
 
         // Check if email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
-            logger.warn("Admin user creation failed: Email already exists: {}", request.getEmail());
+            logger.warn("{} user creation failed: Email already exists: {}", label, request.getEmail());
             throw new UserAlreadyExistsException("Email already exists: " + request.getEmail());
         }
 
         // Validate password confirmation
         if (!request.getPassword().equals(request.getConfirmPassword())) {
-            logger.warn("Admin user creation failed: Password mismatch for user: {}", request.getUsername());
+            logger.warn("{} user creation failed: Password mismatch for user: {}", label, request.getUsername());
             throw new IllegalArgumentException("Password and confirm password do not match");
         }
 
-        // Admin-created accounts are active immediately (including tutors created by admin)
         User user = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
@@ -187,14 +197,14 @@ public class UserServiceImpl implements UserService {
                 .specialization(request.getSpecialization())
                 .role(requestedRole)
                 .profileImageUrl(request.getProfileImageUrl())
-                .isActive(true)  // Admin/Technician accounts are active by default
+                .isActive(true)
                 .isEmailVerified(false)
                 .loginAttempts(0)
                 .build();
 
         User savedUser = userRepository.save(user);
-        logger.info("Admin user created successfully: {} (ID: {}, Role: {})", 
-                    savedUser.getUsername(), savedUser.getId(), savedUser.getRole());
+        logger.info("{} user created successfully: {} (ID: {}, Role: {})",
+                    label, savedUser.getUsername(), savedUser.getId(), savedUser.getRole());
 
         String token = jwtUtil.generateToken(savedUser);
 
@@ -354,6 +364,8 @@ public class UserServiceImpl implements UserService {
         }
 
         clearOtpState(user);
+        user.setIsEmailVerified(true);
+        user.setIsActive(true);
         user.setLoginAttempts(0);
         user.setLockedUntil(null);
         user.setLastLogin(LocalDateTime.now());
@@ -641,7 +653,8 @@ public class UserServiceImpl implements UserService {
     }
 
     private boolean requiresOtp(Role role) {
-        return role == Role.ADMIN;
+        // Enforce OTP verification for all user roles
+        return true;
     }
 
 }

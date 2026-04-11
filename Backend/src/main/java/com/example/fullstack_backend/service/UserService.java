@@ -18,6 +18,8 @@ public interface UserService {
     
     AuthResponse createAdminUser(RegisterRequest request);
 
+    AuthResponse createManagerUser(RegisterRequest request);
+
     AuthResponse login(LoginRequest request);
 
     AuthResponse verifyLoginOtp(OtpVerificationRequest request);
