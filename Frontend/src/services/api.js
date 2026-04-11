@@ -90,4 +90,14 @@ export const notificationAPI = {
   broadcastToAll: (notification) => api.post('/notifications/broadcast', notification),
 };
 
+// Campus resources (facilities & assets) API calls
+export const resourceAPI = {
+  getAll: () => api.get('/resources'),
+  getById: (id) => api.get(`/resources/${id}`),
+  search: (params) => api.get('/resources/search', { params }),
+  create: (data) => api.post('/resources', data),
+  update: (id, data) => api.put(`/resources/${id}`, data),
+  remove: (id) => api.delete(`/resources/${id}`),
+};
+
 export default api;

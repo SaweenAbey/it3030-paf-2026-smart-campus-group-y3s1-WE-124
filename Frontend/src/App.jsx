@@ -16,6 +16,7 @@ import ManagerDashboard from './pages/ManagerDashboard';
 import Bookings from './pages/Bookings';
 import NotificationCreate from './pages/NotificationCreate';
 import Services from './pages/Services';
+import ResourcesCatalogue from './pages/resources/ResourcesCatalogue';
 
 const getDefaultRouteByRole = (role) => {
   const normalizedRole = (role || '').toUpperCase();
@@ -114,6 +115,14 @@ function AppContent() {
         <Route path="/role-selector" element={<RoleSelector />} />
         <Route path="/bookings" element={<Bookings />} />
         <Route path="/services" element={<Services />} />
+        <Route
+          path="/resources"
+          element={
+            <ProtectedRoute>
+              <ResourcesCatalogue />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={
