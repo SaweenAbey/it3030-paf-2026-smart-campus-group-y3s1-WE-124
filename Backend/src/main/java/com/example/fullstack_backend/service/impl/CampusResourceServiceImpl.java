@@ -1,6 +1,8 @@
 package com.example.fullstack_backend.service.impl;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -32,11 +34,14 @@ public class CampusResourceServiceImpl implements CampusResourceService {
         CampusResource resource = CampusResource.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .imageUrl(request.getImageUrl())
                 .type(request.getType())
                 .capacity(request.getCapacity())
                 .location(request.getLocation())
                 .availabilityStartTime(request.getAvailabilityStartTime())
                 .availabilityEndTime(request.getAvailabilityEndTime())
+                .availabilityDurationMinutes(resolveDurationMinutes(request))
+                .features(normalizeFeatures(request.getFeatures()))
                 .status(request.getStatus() != null ? request.getStatus() : ResourceStatus.ACTIVE)
                 .build();
 
@@ -52,11 +57,14 @@ public class CampusResourceServiceImpl implements CampusResourceService {
 
         existing.setName(request.getName());
         existing.setDescription(request.getDescription());
+        existing.setImageUrl(request.getImageUrl());
         existing.setType(request.getType());
         existing.setCapacity(request.getCapacity());
         existing.setLocation(request.getLocation());
         existing.setAvailabilityStartTime(request.getAvailabilityStartTime());
         existing.setAvailabilityEndTime(request.getAvailabilityEndTime());
+        existing.setAvailabilityDurationMinutes(resolveDurationMinutes(request));
+        existing.setFeatures(normalizeFeatures(request.getFeatures()));
         if (request.getStatus() != null) {
             existing.setStatus(request.getStatus());
         }
@@ -105,14 +113,45 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .id(resource.getId())
                 .name(resource.getName())
                 .description(resource.getDescription())
+                .imageUrl(resource.getImageUrl())
                 .type(resource.getType())
                 .capacity(resource.getCapacity())
                 .location(resource.getLocation())
                 .availabilityStartTime(resource.getAvailabilityStartTime())
                 .availabilityEndTime(resource.getAvailabilityEndTime())
+                .availabilityDurationMinutes(resource.getAvailabilityDurationMinutes())
+                .features(resource.getFeatures())
                 .status(resource.getStatus())
                 .createdAt(resource.getCreatedAt())
                 .updatedAt(resource.getUpdatedAt())
                 .build();
+    }
+
+    private Integer resolveDurationMinutes(CampusResourceRequest request) {
+        if (request.getAvailabilityDurationMinutes() != null && request.getAvailabilityDurationMinutes() > 0) {
+            return request.getAvailabilityDurationMinutes();
+        }
+
+        if (request.getAvailabilityStartTime() != null && request.getAvailabilityEndTime() != null) {
+            int minutes = request.getAvailabilityEndTime().toSecondOfDay() / 60
+                    - request.getAvailabilityStartTime().toSecondOfDay() / 60;
+            if (minutes <= 0) {
+                minutes += 24 * 60;
+            }
+            return minutes;
+        }
+
+        return null;
+    }
+
+    private Set<String> normalizeFeatures(Set<String> incomingFeatures) {
+        if (incomingFeatures == null || incomingFeatures.isEmpty()) {
+            return new HashSet<>();
+        }
+
+        return incomingFeatures.stream()
+                .filter(feature -> feature != null && !feature.trim().isEmpty())
+                .map(String::trim)
+                .collect(Collectors.toCollection(HashSet::new));
     }
 }

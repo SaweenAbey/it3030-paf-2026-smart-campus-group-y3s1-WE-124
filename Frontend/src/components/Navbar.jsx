@@ -21,7 +21,7 @@ const Navbar = () => {
 
   const navLinks = [
     { label: 'Home', to: '/' },
-    { label: 'Catalogue', to: '/resources' },
+    { label: 'All Resources', to: '/resources' },
     { label: 'Bookings', to: '/bookings' },
     { label: 'Services', to: '/services' },
     { label: 'Support', to: '/dashboard?tab=activity' },
@@ -85,10 +85,10 @@ const Navbar = () => {
       
       <div className="glass-navbar mx-auto flex h-16 w-full max-w-7xl items-center justify-between rounded-full border border-white/40 px-3 shadow-2xl sm:px-4 transition-all duration-300 hover:border-white/60 hover:shadow-3xl">
         <Link to="/" className="flex items-center gap-2 pl-1 transition-transform duration-200 hover:scale-105">
-           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-sky-900 to-sky-500 shadow-lg ring-2 ring-sky-400/30">
+           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-linear-to-br from-sky-900 to-sky-500 shadow-lg ring-2 ring-sky-400/30">
             <span className="text-sm font-bold text-white">U</span>
           </div>
-          <span className="hidden text-base font-semibold bg-gradient-to-r from-sky-900 to-sky-600 bg-clip-text text-transparent sm:block">UNI 360</span>
+          <span className="hidden text-base font-semibold bg-linear-to-r from-sky-900 to-sky-600 bg-clip-text text-transparent sm:block">UNI 360</span>
         </Link>
 
         <div className="hidden items-center gap-1 rounded-full border border-white/30 bg-white/20 p-1 md:flex backdrop-blur-sm">
@@ -130,7 +130,7 @@ const Navbar = () => {
                     referrerPolicy="no-referrer"
                   />
                 ) : (
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-sky-700 to-blue-500 text-xs font-bold text-white">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-linear-to-br from-sky-700 to-blue-500 text-xs font-bold text-white">
                     {userInitials || 'U'}
                   </span>
                 )}

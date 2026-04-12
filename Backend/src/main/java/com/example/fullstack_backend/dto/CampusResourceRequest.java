@@ -1,6 +1,7 @@
 package com.example.fullstack_backend.dto;
 
 import java.time.LocalTime;
+import java.util.Set;
 
 import com.example.fullstack_backend.model.ResourceStatus;
 import com.example.fullstack_backend.model.ResourceType;
@@ -27,6 +28,9 @@ public class CampusResourceRequest {
     @Size(max = 500, message = "Description cannot exceed 500 characters")
     private String description;
 
+    @Size(max = 1000, message = "Image URL cannot exceed 1000 characters")
+    private String imageUrl;
+
     @NotNull(message = "Resource type is required")
     private ResourceType type;
 
@@ -41,6 +45,11 @@ public class CampusResourceRequest {
     private LocalTime availabilityStartTime;
 
     private LocalTime availabilityEndTime;
+
+    @Min(value = 1, message = "Availability duration must be at least 1 minute")
+    private Integer availabilityDurationMinutes;
+
+    private Set<String> features;
 
     private ResourceStatus status;
 }
