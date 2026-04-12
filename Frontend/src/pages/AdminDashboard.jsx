@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI, notificationAPI, userAPI } from '../services/api';
 import AdminSkyStatusButton from '../components/AdminSkyStatusButton';
+import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
 
 const ROLE_FILTER_OPTIONS = [
@@ -70,7 +71,6 @@ const AdminDashboard = () => {
   const [userSection, setUserSection] = useState('all');
   const [users, setUsers] = useState([]);
   const [pendingTutors, setPendingTutors] = useState([]);
-  const [pendingStudents, setPendingStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusToggleId, setStatusToggleId] = useState(null);
@@ -131,7 +131,6 @@ const AdminDashboard = () => {
   useEffect(() => {
     loadUsers();
     loadPendingTutors();
-    loadPendingStudents();
   }, []);
 
   useEffect(() => {
@@ -159,15 +158,6 @@ const AdminDashboard = () => {
       setPendingTutors(response.data || []);
     } catch (error) {
       console.error('Failed to load pending tutors:', error);
-    }
-  };
-
-  const loadPendingStudents = async () => {
-    try {
-      const response = await userAPI.getPendingStudents();
-      setPendingStudents(response.data || []);
-    } catch (error) {
-      console.error('Failed to load pending students:', error);
     }
   };
 
@@ -254,17 +244,6 @@ const AdminDashboard = () => {
       loadUsers();
     } catch (error) {
       toast.error('Failed to approve tutor');
-    }
-  };
-
-  const handleApproveStudent = async (studentId) => {
-    try {
-      await userAPI.approveStudent(studentId);
-      toast.success('Student account approved!');
-      loadPendingStudents();
-      loadUsers();
-    } catch (error) {
-      toast.error('Failed to approve student');
     }
   };
 
@@ -407,21 +386,20 @@ const AdminDashboard = () => {
 
   const activeUsers = users.filter((u) => u.isActive).length;
   const adminUsers = users.filter((u) => u.role === 'ADMIN').length;
-  const pendingAccounts = pendingTutors.length + pendingStudents.length;
 
   const stats = [
-    { label: 'Total Users', value: users.length, tone: 'from-sky-500 to-sky-600' },
-    { label: 'Active Accounts', value: activeUsers, tone: 'from-sky-400 to-cyan-500' },
-    { label: 'Pending Approvals', value: pendingAccounts, tone: 'from-sky-600 to-sky-700' },
-    { label: 'Admin Accounts', value: adminUsers, tone: 'from-slate-600 to-sky-700' },
+    { label: 'Total Users', value: users.length },
+    { label: 'Active Accounts', value: activeUsers },
+    { label: 'Pending Tutors', value: pendingTutors.length },
+    { label: 'Admin Accounts', value: adminUsers },
   ];
 
   const sidebarItems = [
-    { id: 'users', label: 'Users' },
-    { id: 'notifications', label: 'Notifications' },
-    { id: 'inquiries', label: 'Inquiries' },
-    { id: 'bookings', label: 'Booking Details' },
-    { id: 'reviews', label: 'Reviews' },
+    { key: 'users', label: 'Users' },
+    { key: 'notifications', label: 'Notifications' },
+    { key: 'inquiries', label: 'Inquiries' },
+    { key: 'bookings', label: 'Booking Details' },
+    { key: 'reviews', label: 'Reviews' },
   ];
 
   const groupedNotifications = useMemo(
@@ -461,62 +439,40 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-50/90 via-white to-sky-50/60">
-      <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#f8fafc_100%)]">
+      <main className="mx-auto max-w-360 px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-          <aside className="h-fit rounded-2xl border border-sky-100/80 bg-white/90 p-4 shadow-sm shadow-sky-100/50 backdrop-blur-sm">
-            <div className="rounded-xl bg-gradient-to-br from-sky-500 via-sky-600 to-sky-700 p-4 text-white shadow-md shadow-sky-200/40">
-              <p className="text-xs uppercase tracking-[0.2em] text-sky-100">UNI 360</p>
-              <h2 className="mt-1 text-lg font-bold">Admin Console</h2>
-              <p className="mt-2 text-xs text-sky-100/90">Secure operations workspace</p>
-            </div>
-
-            <nav className="mt-4 space-y-2">
-              {sidebarItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition ${
-                    activeTab === item.id
-                      ? 'bg-gradient-to-r from-sky-600 to-sky-500 text-white shadow-md shadow-sky-200/50'
-                      : 'text-slate-600 hover:bg-sky-50'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="mt-5 rounded-xl border border-sky-100 bg-gradient-to-b from-white to-sky-50/50 p-3">
-              <p className="text-xs text-slate-500">Signed in as</p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">{user?.name || user?.username}</p>
+          <Sidebar items={sidebarItems} activeTab={activeTab} onTabChange={setActiveTab} title="Admin Console">
+            <div className="rounded-xl border border-sky-100 bg-linear-to-b from-white to-sky-50/50 p-4">
+              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Signed in as</p>
+              <p className="mt-1 text-sm font-bold text-slate-800 truncate">{user?.name || user?.username}</p>
               <button
                 onClick={handleLogout}
-                className="mt-3 w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm font-semibold text-sky-800 transition hover:bg-sky-50"
+                className="mt-4 w-full rounded-xl border border-sky-200 bg-white px-3 py-2 text-sm font-bold text-red-600 shadow-sm transition hover:bg-red-50 hover:border-red-200 hover:text-red-700"
               >
-                Logout
+                Sign Out
               </button>
             </div>
-          </aside>
+          </Sidebar>
 
           <section className="space-y-6">
-            <section className="rounded-3xl border border-sky-100/90 bg-gradient-to-br from-white via-sky-50 to-sky-100/90 p-6 shadow-lg shadow-sky-100/80 sm:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">Administration Console</p>
-              <h1 className="mt-3 bg-gradient-to-r from-slate-800 via-sky-800 to-sky-600 bg-clip-text text-3xl font-bold text-transparent sm:text-4xl">
-                Professional Admin Dashboard
+            <section className="rounded-4xl border border-slate-200/70 bg-white p-6 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.25)] sm:p-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-700">Administration Console</p>
+              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                Campus Operations Command Center
               </h1>
-              <p className="mt-3 max-w-2xl text-sm text-slate-600 sm:text-base">
-                Manage users, notifications, inquiries, bookings, and reviews from one control center.
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+                Manage user lifecycle, operational notifications, service requests, bookings, and reviews from a single governed workspace.
               </p>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((item) => (
                   <div
                     key={item.label}
-                    className="rounded-2xl border border-sky-100/80 bg-white/90 p-4 shadow-sm shadow-sky-50 backdrop-blur-sm"
+                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
                   >
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{item.label}</p>
-                    <p className={`mt-2 inline-block rounded-lg bg-gradient-to-r px-3 py-1 text-2xl font-bold text-white ${item.tone}`}>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
+                    <p className={`mt-2 inline-flex rounded-xl bg-white px-3 py-2 text-2xl font-semibold text-slate-900 ring-1 ring-slate-200`}>
                       {item.value}
                     </p>
                   </div>
@@ -525,40 +481,41 @@ const AdminDashboard = () => {
             </section>
 
             {activeTab === 'users' && (
-              <div className="rounded-2xl border border-sky-100/90 bg-white/95 shadow-sm shadow-sky-100/40">
-                <div className="border-b border-sky-50 p-6">
-                  <h2 className="text-2xl font-bold text-slate-900">Users</h2>
-                  <p className="mt-1 text-sm text-slate-500">Manage accounts, tutor approvals, and user creation.</p>
+              <div className="rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
+                <div className="border-b border-slate-200 p-6">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">User Management</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Users</h2>
+                  <p className="mt-1 text-sm text-slate-500">Manage accounts, tutor approvals, and account creation.</p>
                 </div>
 
                 <div className="p-6">
                   <div className="mb-6 flex flex-wrap gap-3 border-b border-slate-200 pb-3">
                     <button
                       onClick={() => setUserSection('all')}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                         userSection === 'all'
-                          ? 'bg-sky-600 text-white shadow-sm shadow-sky-200/50'
-                          : 'bg-slate-100 text-slate-700 hover:bg-sky-50'
+                          ? 'bg-slate-900 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       All Users
                     </button>
                     <button
                       onClick={() => setUserSection('pending')}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                         userSection === 'pending'
-                          ? 'bg-sky-600 text-white shadow-sm shadow-sky-200/50'
-                          : 'bg-slate-100 text-slate-700 hover:bg-sky-50'
+                          ? 'bg-slate-900 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
-                      Pending Approvals
+                      Pending Tutors
                     </button>
                     <button
                       onClick={() => setUserSection('create')}
-                      className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                         userSection === 'create'
-                          ? 'bg-sky-600 text-white shadow-sm shadow-sky-200/50'
-                          : 'bg-slate-100 text-slate-700 hover:bg-sky-50'
+                          ? 'bg-slate-900 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       Create User
@@ -593,7 +550,7 @@ const AdminDashboard = () => {
                       ) : filteredUsers.length === 0 ? (
                         <p className="text-slate-600">No users match this filter</p>
                       ) : (
-                        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
                           <table className="w-full text-sm">
                             <thead className="bg-slate-50">
                               <tr>
@@ -643,62 +600,29 @@ const AdminDashboard = () => {
                   )}
 
                   {userSection === 'pending' && (
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                          Pending Tutor Requests
-                        </h3>
-                        {pendingTutors.length === 0 ? (
-                          <p className="text-slate-600">No pending tutor requests</p>
-                        ) : (
-                          pendingTutors.map((tutor) => (
-                            <div
-                              key={tutor.id}
-                              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
-                            >
-                              <div>
-                                <p className="font-semibold text-slate-900">{tutor.name}</p>
-                                <p className="text-sm text-slate-600">{tutor.email}</p>
-                                <p className="mt-1 text-xs text-slate-500">Username: {tutor.username}</p>
-                              </div>
-                              <button
-                                onClick={() => handleApproveTutor(tutor.id)}
-                                className="rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-sky-700 hover:to-sky-600"
-                              >
-                                Approve Tutor
-                              </button>
+                    <div className="space-y-4">
+                      {pendingTutors.length === 0 ? (
+                        <p className="text-slate-600">No pending tutor requests</p>
+                      ) : (
+                        pendingTutors.map((tutor) => (
+                          <div
+                            key={tutor.id}
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                          >
+                            <div>
+                              <p className="font-semibold text-slate-900">{tutor.name}</p>
+                              <p className="text-sm text-slate-600">{tutor.email}</p>
+                              <p className="mt-1 text-xs text-slate-500">Username: {tutor.username}</p>
                             </div>
-                          ))
-                        )}
-                      </div>
-
-                      <div>
-                        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                          Pending Student Accounts
-                        </h3>
-                        {pendingStudents.length === 0 ? (
-                          <p className="text-slate-600">No pending student accounts</p>
-                        ) : (
-                          pendingStudents.map((student) => (
-                            <div
-                              key={student.id}
-                              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 transition hover:bg-slate-50"
+                            <button
+                              onClick={() => handleApproveTutor(tutor.id)}
+                              className="rounded-xl bg-linear-to-r from-sky-600 to-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-sky-700 hover:to-sky-600"
                             >
-                              <div>
-                                <p className="font-semibold text-slate-900">{student.name}</p>
-                                <p className="text-sm text-slate-600">{student.email}</p>
-                                <p className="mt-1 text-xs text-slate-500">Username: {student.username}</p>
-                              </div>
-                              <button
-                                onClick={() => handleApproveStudent(student.id)}
-                                className="rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-sky-700 hover:to-sky-600"
-                              >
-                                Approve Student
-                              </button>
-                            </div>
-                          ))
-                        )}
-                      </div>
+                              Approve Tutor
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
 
@@ -820,7 +744,7 @@ const AdminDashboard = () => {
                         <button
                           type="submit"
                           disabled={loading}
-                          className="rounded-xl bg-gradient-to-r from-sky-600 to-sky-500 px-6 py-2.5 font-semibold text-white shadow-md shadow-sky-200/40 transition hover:from-sky-700 hover:to-sky-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-xl bg-linear-to-r from-sky-600 to-sky-500 px-6 py-2.5 font-semibold text-white shadow-md shadow-sky-200/40 transition hover:from-sky-700 hover:to-sky-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {loading ? 'Creating...' : 'Create User'}
                         </button>
@@ -833,8 +757,9 @@ const AdminDashboard = () => {
 
             {activeTab === 'notifications' && (
               <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-sky-100 bg-gradient-to-r from-white to-sky-50/60 p-6">
-                  <h2 className="text-2xl font-bold text-slate-900">Notifications</h2>
+                <div className="border-b border-slate-200 bg-white p-6">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">Communication Center</p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Notifications</h2>
                   <p className="mt-1 text-sm text-slate-500">
                     Create announcements and review everything sent across the platform.
                   </p>
@@ -963,7 +888,7 @@ const AdminDashboard = () => {
                       <button
                         type="submit"
                         disabled={notifSubmitting}
-                        className="w-full rounded-2xl bg-gradient-to-r from-sky-600 to-sky-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-200/40 transition hover:from-sky-700 hover:to-sky-600 disabled:opacity-50"
+                        className="w-full rounded-2xl bg-linear-to-r from-sky-600 to-sky-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-sky-200/40 transition hover:from-sky-700 hover:to-sky-600 disabled:opacity-50"
                       >
                         {notifSubmitting ? 'Sending…' : 'Send notification'}
                       </button>
@@ -992,7 +917,7 @@ const AdminDashboard = () => {
                         placeholder="Search title, message, username…"
                         value={notifFilter.search}
                         onChange={(e) => setNotifFilter((p) => ({ ...p, search: e.target.value }))}
-                        className="min-w-[200px] flex-1 rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        className="min-w-50 flex-1 rounded-2xl border border-slate-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                       />
                       <select
                         value={notifFilter.type}
@@ -1024,7 +949,7 @@ const AdminDashboard = () => {
                       {filteredNotificationGroups.length !== 1 ? 's' : ''} ({adminNotifications.length} inbox rows)
                     </div>
 
-                    <div className="mt-4 max-h-[520px] space-y-3 overflow-y-auto pr-1">
+                    <div className="mt-4 max-h-130 space-y-3 overflow-y-auto pr-1">
                       {notifLoading ? (
                         <p className="text-slate-600">Loading…</p>
                       ) : filteredNotificationGroups.length === 0 ? (
@@ -1077,8 +1002,9 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'inquiries' && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-2xl font-bold text-slate-900">Inquiries</h2>
+              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">Service Desk</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Inquiries</h2>
                 <p className="mt-1 text-sm text-slate-500">Track and respond to support requests submitted by users.</p>
                 <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
                   Professional inquiries section created. Add inquiry API integration when backend endpoint is ready.
@@ -1087,8 +1013,9 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'bookings' && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-2xl font-bold text-slate-900">Booking Details</h2>
+              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">Resource Planning</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Booking Details</h2>
                 <p className="mt-1 text-sm text-slate-500">Monitor booking status, schedules, and resource allocations.</p>
                 <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
                   Professional booking details section created. Connect this to booking endpoints for real-time data.
@@ -1097,8 +1024,9 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'reviews' && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 className="text-2xl font-bold text-slate-900">Reviews</h2>
+              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">Quality Review</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Reviews</h2>
                 <p className="mt-1 text-sm text-slate-500">View feedback analytics and service quality reviews.</p>
                 <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
                   Professional reviews section created. Plug in review metrics and moderation features here.

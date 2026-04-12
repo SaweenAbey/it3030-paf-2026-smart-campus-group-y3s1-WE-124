@@ -271,20 +271,27 @@ const TeacherDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 sm:px-6 py-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="rounded-3xl bg-gradient-to-r from-indigo-500 to-cyan-400 p-6 md:p-8 text-white shadow-2xl mb-6">
-          <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs tracking-wider uppercase mb-4">
-            🎓 Academic Hub
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Teacher Dashboard</h1>
-          <p className="text-white/90 text-base md:text-lg">Welcome back, {user?.name || 'Teacher'}.</p>
-          <p className="text-white/75 text-sm mt-2">Manage your classes and students</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-cyan-50/30 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="max-w-[1440px] mx-auto">
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+          <Sidebar items={sidebarItems} title="Teacher Hub">
+            <div className="rounded-xl border border-indigo-100 bg-gradient-to-b from-white to-indigo-50/50 p-4">
+              <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Signed in as</p>
+              <p className="mt-1 text-sm font-bold text-slate-800 truncate">{user?.name || 'Teacher'}</p>
+            </div>
+          </Sidebar>
 
-        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
-          <Sidebar items={sidebarItems} />
-          <main>{renderContent()}</main>
+          <section className="space-y-6">
+            <div className="rounded-3xl border border-indigo-100 bg-gradient-to-br from-indigo-500 to-cyan-400 p-6 sm:p-8 text-white shadow-lg shadow-indigo-200/50">
+              <div className="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-semibold tracking-wider uppercase mb-4 border border-white/20">
+                🎓 Academic Hub
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-2">Teacher Dashboard</h1>
+              <p className="text-white/90 text-sm sm:text-base">Welcome back, {user?.name || 'Teacher'}. Manage your classes and students.</p>
+            </div>
+            
+            {renderContent()}
+          </section>
         </div>
       </div>
     </div>
