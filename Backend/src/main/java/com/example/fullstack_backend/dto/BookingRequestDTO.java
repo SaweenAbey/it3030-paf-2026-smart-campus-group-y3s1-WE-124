@@ -14,7 +14,6 @@ public class BookingRequestDTO {
     @NotBlank(message = "Resource ID is required")
     private String resourceId;
 
-    @NotBlank(message = "User ID is required")
     private String userId;
 
     @NotNull(message = "Start time is required")

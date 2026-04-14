@@ -22,7 +22,7 @@ const Navbar = () => {
   const navLinks = [
     { label: 'Home', to: '/' },
     { label: 'All Resources', to: '/resources' },
-    { label: 'Bookings', to: '/bookings' },
+    { label: 'Booking', to: '/bookings' },
     { label: 'Services', to: '/services' },
     { label: 'Support', to: '/dashboard?tab=activity' },
   ];
@@ -30,6 +30,14 @@ const Navbar = () => {
   const isActive = (to) => {
     if (to.includes('?')) {
       return `${location.pathname}${location.search}` === to;
+    }
+
+    if (to === '/bookings' && location.pathname.startsWith('/bookings')) {
+      return true;
+    }
+
+    if (to === '/resources' && location.pathname.startsWith('/resources')) {
+      return true;
     }
 
     if (to === '/dashboard') {
