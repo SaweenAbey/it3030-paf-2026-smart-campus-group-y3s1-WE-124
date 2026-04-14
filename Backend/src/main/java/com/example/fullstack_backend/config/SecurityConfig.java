@@ -19,6 +19,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -87,6 +88,13 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/notifications/admin/**")
                             .hasRole("ADMIN")
+
+                        // Booking management
+                        .requestMatchers(HttpMethod.GET, "/api/bookings").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/user/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/approve").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/reject").hasRole("ADMIN")
+                        .requestMatchers("/api/bookings/**").authenticated()
                         
                         // All other requests need authentication
                         .anyRequest().authenticated()

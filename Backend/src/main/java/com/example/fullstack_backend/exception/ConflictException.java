@@ -1,4 +1,4 @@
-package com.example.demo.exception;
+package com.example.fullstack_backend.exception;
 
 public class ConflictException extends RuntimeException {
     public ConflictException(String message) {

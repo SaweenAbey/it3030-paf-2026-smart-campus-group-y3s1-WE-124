@@ -1,12 +1,13 @@
-package com.example.demo.service;
+package com.example.fullstack_backend.service.impl;
 
-import com.example.demo.dto.BookingRequestDTO;
-import com.example.demo.dto.BookingResponseDTO;
-import com.example.demo.dto.BookingUpdateDTO;
-import com.example.demo.exception.ConflictException;
-import com.example.demo.model.Booking;
-import com.example.demo.model.Booking.BookingStatus;
-import com.example.demo.repo.BookingRepository;
+import com.example.fullstack_backend.dto.BookingRequestDTO;
+import com.example.fullstack_backend.dto.BookingResponseDTO;
+import com.example.fullstack_backend.dto.BookingUpdateDTO;
+import com.example.fullstack_backend.exception.ConflictException;
+import com.example.fullstack_backend.model.Booking;
+import com.example.fullstack_backend.model.Booking.BookingStatus;
+import com.example.fullstack_backend.repository.BookingRepository;
+import com.example.fullstack_backend.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +23,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingResponseDTO createBooking(BookingRequestDTO dto) {
         if (!dto.getEndTime().isAfter(dto.getStartTime())) {
-            throw new RuntimeException("End time must be after start time");
+            throw new IllegalArgumentException("End time must be after start time");
         }
         List<Booking> conflicts = bookingRepository.findConflicts(
                 dto.getResourceId(), dto.getStartTime(), dto.getEndTime()
@@ -30,10 +31,10 @@ public class BookingServiceImpl implements BookingService {
         if (!conflicts.isEmpty()) {
             Booking conflict = conflicts.get(0);
             throw new ConflictException(
-                    "Resource " + dto.getResourceId() +
-                            " is already booked from " + conflict.getStartTime() +
-                            " to " + conflict.getEndTime() +
-                            " (Status: " + conflict.getStatus() + ")"
+                    "Resource " + dto.getResourceId()
+                            + " is already booked from " + conflict.getStartTime()
+                            + " to " + conflict.getEndTime()
+                            + " (Status: " + conflict.getStatus() + ")"
             );
         }
         Booking booking = Booking.builder()
@@ -50,15 +51,15 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingResponseDTO updateBooking(Long id, BookingUpdateDTO dto) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found: " + id));
 
         if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new RuntimeException("Only PENDING bookings can be updated");
+            throw new IllegalArgumentException("Only PENDING bookings can be updated");
         }
 
         if (dto.getStartTime() != null && dto.getEndTime() != null) {
             if (!dto.getEndTime().isAfter(dto.getStartTime())) {
-                throw new RuntimeException("End time must be after start time");
+                throw new IllegalArgumentException("End time must be after start time");
             }
             List<Booking> conflicts = bookingRepository.findConflictsExcluding(
                     booking.getResourceId(),
@@ -67,9 +68,7 @@ public class BookingServiceImpl implements BookingService {
                     id
             );
             if (!conflicts.isEmpty()) {
-                throw new ConflictException(
-                        "Resource already booked for this time slot!"
-                );
+                throw new ConflictException("Resource already booked for this time slot!");
             }
             booking.setStartTime(dto.getStartTime());
             booking.setEndTime(dto.getEndTime());
@@ -96,15 +95,16 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.findAll()
                 .stream()
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
-                .map(this::toDTO).collect(Collectors.toList());
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
     public BookingResponseDTO approveBooking(Long id) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found: " + id));
         if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new RuntimeException("Only PENDING bookings can be approved");
+            throw new IllegalArgumentException("Only PENDING bookings can be approved");
         }
         booking.setStatus(BookingStatus.APPROVED);
         return toDTO(bookingRepository.save(booking));
@@ -113,12 +113,12 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingResponseDTO rejectBooking(Long id, String reason) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found: " + id));
         if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new RuntimeException("Only PENDING bookings can be rejected");
+            throw new IllegalArgumentException("Only PENDING bookings can be rejected");
         }
         if (reason == null || reason.trim().isEmpty()) {
-            throw new RuntimeException("Rejection reason is required");
+            throw new IllegalArgumentException("Rejection reason is required");
         }
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(reason);
@@ -128,10 +128,10 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingResponseDTO cancelBooking(Long id) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found: " + id));
-        if (booking.getStatus() == BookingStatus.REJECTED ||
-                booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new RuntimeException(
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found: " + id));
+        if (booking.getStatus() == BookingStatus.REJECTED
+                || booking.getStatus() == BookingStatus.CANCELLED) {
+            throw new IllegalArgumentException(
                     "Cannot cancel a " + booking.getStatus() + " booking"
             );
         }

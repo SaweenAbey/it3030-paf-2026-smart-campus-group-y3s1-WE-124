@@ -1,7 +1,7 @@
-package com.example.demo.repo;
+package com.example.fullstack_backend.repository;
 
-import com.example.demo.model.Booking;
-import com.example.demo.model.Booking.BookingStatus;
+import com.example.fullstack_backend.model.Booking;
+import com.example.fullstack_backend.model.Booking.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
