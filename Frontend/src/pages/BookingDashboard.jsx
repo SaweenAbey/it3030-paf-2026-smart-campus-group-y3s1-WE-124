@@ -10,6 +10,7 @@ export default function BookingDashboard() {
 
   const [resources, setResources] = useState([]);
   const [userBookings, setUserBookings] = useState([]);
+  const [resourceBookings, setResourceBookings] = useState({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('available');
 
@@ -27,7 +28,21 @@ export default function BookingDashboard() {
     try {
       const resourceRes = await resourceAPI.getAll();
       const allResources = resourceRes.data || [];
-      setResources(allResources.filter((r) => r.status === 'ACTIVE'));
+      const activeResources = allResources.filter((r) => r.status === 'ACTIVE');
+      setResources(activeResources);
+
+      // Fetch approved bookings for each resource
+      const bookingsMap = {};
+      for (const resource of activeResources) {
+        try {
+          const bookingRes = await bookingAPI.getApprovedByResource(resource.id);
+          bookingsMap[resource.id] = Array.isArray(bookingRes.data) ? bookingRes.data : [];
+        } catch (err) {
+          console.warn(`Error fetching bookings for resource ${resource.id}:`, err);
+          bookingsMap[resource.id] = [];
+        }
+      }
+      setResourceBookings(bookingsMap);
 
       try {
         const bookingsRes = await bookingAPI.getMyBookings();

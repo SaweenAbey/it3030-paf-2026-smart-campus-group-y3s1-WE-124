@@ -1,7 +1,6 @@
 package com.example.fullstack_backend.dto;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.Set;
 
 import com.example.fullstack_backend.model.ResourceStatus;
@@ -25,8 +24,6 @@ public class CampusResourceResponse {
     private ResourceType type;
     private Integer capacity;
     private String location;
-    private LocalTime availabilityStartTime;
-    private LocalTime availabilityEndTime;
     private Integer availabilityDurationMinutes;
     private Set<String> features;
     private ResourceStatus status;

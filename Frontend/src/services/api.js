@@ -106,6 +106,7 @@ export const bookingAPI = {
   getMyBookings: () => api.get('/bookings/my'),
   getAllBookings: () => api.get('/bookings'),
   getUserBookings: (userId) => api.get(`/bookings/user/${userId}`),
+  getApprovedByResource: (resourceId) => api.get(`/bookings/resource/${resourceId}/approved`),
   approveBooking: (id) => api.patch(`/bookings/${id}/approve`),
   rejectBooking: (id, reason) => api.patch(`/bookings/${id}/reject`, { reason }),
   cancelBooking: (id) => api.delete(`/bookings/${id}`),

@@ -1,20 +1,77 @@
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import { getMyBookings, cancelBooking } from '../api/bookingApi';
 
 const UserDashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'profile';
+  const [bookings, setBookings] = useState([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
+  const [bookingError, setBookingError] = useState(null);
+
+  // Fetch user bookings
+  useEffect(() => {
+    if (activeTab === 'bookings') {
+      fetchBookings();
+    }
+  }, [activeTab]);
+
+  const fetchBookings = async () => {
+    setLoadingBookings(true);
+    setBookingError(null);
+    try {
+      const response = await getMyBookings();
+      setBookings(response.data || []);
+    } catch (error) {
+      setBookingError('Failed to load bookings. Please try again.');
+      console.error('Error fetching bookings:', error);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    if (confirm('Are you sure you want to cancel this booking?')) {
+      try {
+        await cancelBooking(bookingId);
+        setBookings(bookings.filter(b => b.id !== bookingId));
+        alert('Booking cancelled successfully');
+      } catch (error) {
+        alert('Failed to cancel booking. Please try again.');
+        console.error('Error cancelling booking:', error);
+      }
+    }
+  };
+
+  const formatDateTime = (datetime) => {
+    if (!datetime) return 'N/A';
+    return new Date(datetime).toLocaleString('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    });
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'PENDING': 'bg-yellow-100 text-yellow-700',
+      'APPROVED': 'bg-green-100 text-green-700',
+      'REJECTED': 'bg-red-100 text-red-700',
+      'CANCELLED': 'bg-gray-100 text-gray-700'
+    };
+    return colors[status] || 'bg-blue-100 text-blue-700';
+  };
 
   const sidebarItems = [
     { key: 'profile', label: 'My Profile', icon: '👤' },
     { key: 'overview', label: 'Overview', icon: '📚' },
     { key: 'courses', label: 'My Courses', icon: '🎓' },
+    { key: 'bookings', label: 'My Bookings', icon: '📅' },
     { key: 'assignments', label: 'Assignments', icon: '📝' },
     { key: 'grades', label: 'Grades', icon: '📊' },
-    { key: 'schedule', label: 'Schedule', icon: '📅' },
+    { key: 'schedule', label: 'Schedule', icon: '📌' },
     { key: 'resources', label: 'Resources', icon: '📖' },
     { key: 'messages', label: 'Messages', icon: '💬' },
   ];
@@ -112,6 +169,102 @@ const UserDashboard = () => {
               </div>
             ))}
           </div>
+        </SectionCard>
+      );
+    }
+
+    if (activeTab === 'bookings') {
+      return (
+        <SectionCard title="My Bookings" subtitle="View and manage your resource bookings.">
+          {loadingBookings ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                <p className="text-slate-600">Loading your bookings...</p>
+              </div>
+            </div>
+          ) : bookingError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-red-700">❌ {bookingError}</p>
+            </div>
+          ) : bookings.length === 0 ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+              <p className="text-slate-600 text-lg">No bookings yet</p>
+              <p className="text-slate-500 text-sm mt-2">Create a booking to reserve a resource</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {bookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-all bg-gradient-to-r from-slate-50 to-white"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-slate-800">
+                          📒 {booking.resourceId || 'Resource'}
+                        </h3>
+                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${getStatusColor(booking.status)}`}>
+                          {booking.status}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500">Booking ID: #{booking.id}</p>
+                    </div>
+                  </div>
+
+                  {/* Booking Period */}
+                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-4 border border-blue-100">
+                    <p className="text-xs uppercase tracking-wide text-slate-600 font-semibold mb-2 flex items-center gap-2">
+                      📅 Booking Period
+                    </p>
+                    <p className="text-slate-800 font-medium">
+                      {formatDateTime(booking.startTime)} → {formatDateTime(booking.endTime)}
+                    </p>
+                  </div>
+
+                  {/* Details Grid */}
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="text-xs text-slate-600 uppercase tracking-wide font-semibold">Purpose</p>
+                      <p className="text-slate-800 font-medium mt-1">{booking.purpose || 'N/A'}</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 p-3">
+                      <p className="text-xs text-slate-600 uppercase tracking-wide font-semibold">👥 Expected Attendees</p>
+                      <p className="text-slate-800 font-medium mt-1">{booking.expectedAttendees || 'Not specified'}</p>
+                    </div>
+                  </div>
+
+                  {/* Rejection Reason */}
+                  {booking.rejectionReason && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 p-3 mb-4">
+                      <p className="text-red-700 text-sm">
+                        <strong>❌ Rejection Reason:</strong> {booking.rejectionReason}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Timestamps */}
+                  <div className="text-xs text-slate-500 flex gap-6 flex-wrap mb-4 pt-3 border-t border-slate-200">
+                    <span>🕐 Created: {formatDateTime(booking.createdAt)}</span>
+                    <span>🔄 Updated: {formatDateTime(booking.updatedAt)}</span>
+                  </div>
+
+                  {/* Actions */}
+                  {booking.status === 'PENDING' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleCancelBooking(booking.id)}
+                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg transition-colors"
+                      >
+                        🚫 Cancel Booking
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
       );
     }

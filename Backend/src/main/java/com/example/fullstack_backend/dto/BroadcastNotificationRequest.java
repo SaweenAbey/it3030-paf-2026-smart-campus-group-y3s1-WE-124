@@ -5,12 +5,14 @@ import com.example.fullstack_backend.model.NotificationType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class BroadcastNotificationRequest {
 
     @NotBlank(message = "Title is required")

@@ -38,9 +38,7 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .type(request.getType())
                 .capacity(request.getCapacity())
                 .location(request.getLocation())
-                .availabilityStartTime(request.getAvailabilityStartTime())
-                .availabilityEndTime(request.getAvailabilityEndTime())
-                .availabilityDurationMinutes(resolveDurationMinutes(request))
+                .availabilityDurationMinutes(request.getAvailabilityDurationMinutes())
                 .features(normalizeFeatures(request.getFeatures()))
                 .status(request.getStatus() != null ? request.getStatus() : ResourceStatus.ACTIVE)
                 .build();
@@ -61,9 +59,7 @@ public class CampusResourceServiceImpl implements CampusResourceService {
         existing.setType(request.getType());
         existing.setCapacity(request.getCapacity());
         existing.setLocation(request.getLocation());
-        existing.setAvailabilityStartTime(request.getAvailabilityStartTime());
-        existing.setAvailabilityEndTime(request.getAvailabilityEndTime());
-        existing.setAvailabilityDurationMinutes(resolveDurationMinutes(request));
+        existing.setAvailabilityDurationMinutes(request.getAvailabilityDurationMinutes());
         existing.setFeatures(normalizeFeatures(request.getFeatures()));
         if (request.getStatus() != null) {
             existing.setStatus(request.getStatus());
@@ -117,8 +113,6 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .type(resource.getType())
                 .capacity(resource.getCapacity())
                 .location(resource.getLocation())
-                .availabilityStartTime(resource.getAvailabilityStartTime())
-                .availabilityEndTime(resource.getAvailabilityEndTime())
                 .availabilityDurationMinutes(resource.getAvailabilityDurationMinutes())
                 .features(resource.getFeatures())
                 .status(resource.getStatus())
@@ -128,20 +122,9 @@ public class CampusResourceServiceImpl implements CampusResourceService {
     }
 
     private Integer resolveDurationMinutes(CampusResourceRequest request) {
-        if (request.getAvailabilityDurationMinutes() != null && request.getAvailabilityDurationMinutes() > 0) {
-            return request.getAvailabilityDurationMinutes();
-        }
-
-        if (request.getAvailabilityStartTime() != null && request.getAvailabilityEndTime() != null) {
-            int minutes = request.getAvailabilityEndTime().toSecondOfDay() / 60
-                    - request.getAvailabilityStartTime().toSecondOfDay() / 60;
-            if (minutes <= 0) {
-                minutes += 24 * 60;
-            }
-            return minutes;
-        }
-
-        return null;
+        return request.getAvailabilityDurationMinutes() != null && request.getAvailabilityDurationMinutes() > 0
+                ? request.getAvailabilityDurationMinutes()
+                : null;
     }
 
     private Set<String> normalizeFeatures(Set<String> incomingFeatures) {

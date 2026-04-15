@@ -1,6 +1,5 @@
 package com.example.fullstack_backend.dto;
 
-import java.time.LocalTime;
 import java.util.Set;
 
 import com.example.fullstack_backend.model.ResourceStatus;
@@ -41,10 +40,6 @@ public class CampusResourceRequest {
     @NotBlank(message = "Location is required")
     @Size(max = 255, message = "Location cannot exceed 255 characters")
     private String location;
-
-    private LocalTime availabilityStartTime;
-
-    private LocalTime availabilityEndTime;
 
     @Min(value = 1, message = "Availability duration must be at least 1 minute")
     private Integer availabilityDurationMinutes;

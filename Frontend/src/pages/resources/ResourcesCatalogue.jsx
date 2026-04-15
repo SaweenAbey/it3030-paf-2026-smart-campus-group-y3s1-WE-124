@@ -47,8 +47,6 @@ const ResourcesCatalogue = () => {
     type: '',
     capacity: '',
     location: '',
-    availabilityStartTime: '',
-    availabilityEndTime: '',
     status: 'ACTIVE',
   });
 
@@ -141,8 +139,6 @@ const ResourcesCatalogue = () => {
       type: '',
       capacity: '',
       location: '',
-      availabilityStartTime: '',
-      availabilityEndTime: '',
       status: 'ACTIVE',
     });
     setSelectedImageFile(null);
@@ -197,12 +193,6 @@ const ResourcesCatalogue = () => {
       toast.error('Location is required');
       return false;
     }
-    if (formData.availabilityStartTime && formData.availabilityEndTime) {
-      if (formData.availabilityEndTime <= formData.availabilityStartTime) {
-        toast.error('End time must be after start time');
-        return false;
-      }
-    }
     return true;
   };
 
@@ -225,8 +215,6 @@ const ResourcesCatalogue = () => {
         type: formData.type,
         capacity: parseInt(formData.capacity, 10),
         location: formData.location.trim(),
-        availabilityStartTime: formData.availabilityStartTime || null,
-        availabilityEndTime: formData.availabilityEndTime || null,
         status: formData.status,
       };
 
@@ -448,30 +436,6 @@ const ResourcesCatalogue = () => {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-slate-700">Available from</label>
-                <input
-                  type="time"
-                  name="availabilityStartTime"
-                  value={formData.availabilityStartTime}
-                  onChange={handleFormChange}
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                  disabled={saving}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-slate-700">Available until</label>
-                <input
-                  type="time"
-                  name="availabilityEndTime"
-                  value={formData.availabilityEndTime}
-                  onChange={handleFormChange}
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                  disabled={saving}
-                />
-              </div>
-
               <div className="mt-2 flex items-center gap-3 md:col-span-2">
                 <button
                   type="submit"
@@ -552,12 +516,6 @@ const ResourcesCatalogue = () => {
                     </p>
                     <p className="col-span-2 rounded-xl bg-slate-50 px-3 py-2">
                       <span className="font-semibold text-slate-700">Location:</span> {r.location || '—'}
-                    </p>
-                    <p className="col-span-2 rounded-xl bg-slate-50 px-3 py-2">
-                      <span className="font-semibold text-slate-700">Availability:</span>{' '}
-                      {r.availabilityStartTime && r.availabilityEndTime
-                        ? `${r.availabilityStartTime} - ${r.availabilityEndTime}`
-                        : 'Not specified'}
                     </p>
                     {r.availabilityDurationMinutes && (
                       <p className="col-span-2 rounded-xl bg-slate-50 px-3 py-2">
@@ -645,14 +603,6 @@ const ResourcesCatalogue = () => {
                   <div className="rounded-xl border border-slate-200 p-3 sm:col-span-2">
                     <p className="text-xs text-slate-500">Location</p>
                     <p className="mt-1 text-sm font-semibold text-slate-900">{selectedResource.location || '—'}</p>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 p-3 sm:col-span-2">
-                    <p className="text-xs text-slate-500">Availability</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900">
-                      {selectedResource.availabilityStartTime && selectedResource.availabilityEndTime
-                        ? `${selectedResource.availabilityStartTime} - ${selectedResource.availabilityEndTime}`
-                        : 'Not specified'}
-                    </p>
                   </div>
                   {selectedResource.availabilityDurationMinutes && (
                     <div className="rounded-xl border border-slate-200 p-3 sm:col-span-2">
