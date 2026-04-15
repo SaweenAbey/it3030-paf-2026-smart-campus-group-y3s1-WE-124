@@ -586,7 +586,7 @@ const ResourcesCatalogue = () => {
                   <button
                     type="button"
                     onClick={() => setSelectedResource(r)}
-                    className="w-full rounded-xl bg-slate-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
+                    className="w-full rounded-xl bg-sky-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700"
                   >
                     View Details
                   </button>

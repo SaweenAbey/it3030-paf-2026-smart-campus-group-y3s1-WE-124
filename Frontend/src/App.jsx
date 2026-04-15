@@ -14,6 +14,8 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import Bookings from './pages/Bookings';
+import BookingDashboard from './pages/BookingDashboard';
+import ResourceDetailsPage from './pages/ResourceDetailsPage';
 import NotificationCreate from './pages/NotificationCreate';
 import Services from './pages/Services';
 import ResourcesCatalogue from './pages/resources/ResourcesCatalogue';
@@ -113,8 +115,14 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/role-selector" element={<RoleSelector />} />
-        <Route path="/bookings" element={<Bookings />} />
-        <Route path="/services" element={<Services />} />
+        <Route
+          path="/bookings"
+          element={
+            <ProtectedRoute>
+              <BookingDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/resources"
           element={
@@ -123,6 +131,15 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/resources/:resourceId"
+          element={
+            <ProtectedRoute>
+              <ResourceDetailsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/services" element={<Services />} />
         <Route
           path="/dashboard"
           element={

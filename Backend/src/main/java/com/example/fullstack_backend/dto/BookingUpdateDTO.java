@@ -1,6 +1,7 @@
-package com.example.demo.dto;
+package com.example.fullstack_backend.dto;
 
 import lombok.Data;
+
 import java.time.LocalDateTime;
 
 @Data

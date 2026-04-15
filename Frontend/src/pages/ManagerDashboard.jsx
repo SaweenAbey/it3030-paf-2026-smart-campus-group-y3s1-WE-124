@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import BookingRequestsManager from '../components/BookingRequestsManager';
 import { resourceAPI } from '../services/api';
 import mediaUpload from '../utils/mediaUpload';
 import toast from 'react-hot-toast';
@@ -316,6 +317,7 @@ const ManagerDashboard = () => {
   };
 
   const sidebarItems = [
+    { key: 'booking-requests', label: 'Booking Requests' },
     { key: 'bookings', label: 'Bookings' },
     { key: 'maintenance', label: 'Maintenance' },
     { key: 'resources', label: 'Resources' },
@@ -372,6 +374,14 @@ const ManagerDashboard = () => {
             <div className={resourcePanelOpen ? 'grid gap-6 xl:grid-cols-[1fr_420px]' : 'space-y-6'}>
               {/* Tab Content Wrap */}
               <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
+
+              {/* Booking Requests Tab */}
+          {activeTab === 'booking-requests' && (
+            <div className="p-6">
+              <h2 className="text-2xl font-semibold text-slate-900 mb-6">Booking Requests</h2>
+              <BookingRequestsManager />
+            </div>
+          )}
 
           {/* Bookings Tab */}
           {activeTab === 'bookings' && (

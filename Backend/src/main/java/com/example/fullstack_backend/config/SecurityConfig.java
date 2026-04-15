@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -87,6 +88,13 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/notifications/admin/**")
                             .hasRole("ADMIN")
+
+                        // Booking management
+                        .requestMatchers(HttpMethod.GET, "/api/bookings").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.GET, "/api/bookings/user/**").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/approve").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers(HttpMethod.PATCH, "/api/bookings/*/reject").hasAnyRole("ADMIN", "MANAGER")
+                        .requestMatchers("/api/bookings/**").authenticated()
                         
                         // All other requests need authentication
                         .anyRequest().authenticated()

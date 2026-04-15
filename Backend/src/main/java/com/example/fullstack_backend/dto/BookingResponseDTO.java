@@ -1,7 +1,11 @@
-package com.example.demo.dto;
+package com.example.fullstack_backend.dto;
 
-import com.example.demo.model.Booking.BookingStatus;
-import lombok.*;
+import com.example.fullstack_backend.model.Booking.BookingStatus;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Data
