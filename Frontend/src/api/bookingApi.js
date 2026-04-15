@@ -14,6 +14,7 @@ API.interceptors.request.use(config => {
 export const createBooking  = (data) => API.post('/bookings', data);
 export const getMyBookings  = () => API.get('/bookings/my');
 export const getAllBookings  = () => API.get('/bookings');
+export const getApprovedByResource = (resourceId) => API.get(`/bookings/resource/${resourceId}/approved`);
 export const updateBooking  = (id, data) => API.put(`/bookings/${id}`, data);
 export const approveBooking = (id) => API.patch(`/bookings/${id}/approve`);
 export const rejectBooking  = (id, reason) =>

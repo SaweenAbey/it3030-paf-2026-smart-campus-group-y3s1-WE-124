@@ -55,6 +55,11 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getUserBookings(userId));
     }
 
+    @GetMapping("/resource/{resourceId}/approved")
+    public ResponseEntity<List<BookingResponseDTO>> getApprovedBookingsByResource(@PathVariable String resourceId) {
+        return ResponseEntity.ok(bookingService.getApprovedBookingsByResource(resourceId));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<BookingResponseDTO> updateBooking(
             @PathVariable Long id,

@@ -8,9 +8,13 @@ import org.springframework.stereotype.Service;
 import com.example.fullstack_backend.dto.BookingRequestDTO;
 import com.example.fullstack_backend.dto.BookingResponseDTO;
 import com.example.fullstack_backend.dto.BookingUpdateDTO;
+import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
+import com.example.fullstack_backend.dto.CreateNotificationRequest;
 import com.example.fullstack_backend.exception.ConflictException;
 import com.example.fullstack_backend.model.Booking;
 import com.example.fullstack_backend.model.Booking.BookingStatus;
+import com.example.fullstack_backend.model.NotificationType;
+import com.example.fullstack_backend.model.Role;
 import com.example.fullstack_backend.repository.BookingRepository;
 import com.example.fullstack_backend.repository.CampusResourceRepository;
 import com.example.fullstack_backend.repository.UserRepository;
@@ -53,7 +57,25 @@ public class BookingServiceImpl implements BookingService {
                 .purpose(dto.getPurpose())
                 .expectedAttendees(dto.getExpectedAttendees())
                 .build();
-        return toDTO(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // Notify all managers about the new booking request
+        try {
+            BroadcastNotificationRequest notificationRequest = BroadcastNotificationRequest.builder()
+                    .title("📋 New Booking Request")
+                    .message("New booking request submitted for resource '" + dto.getResourceId() + 
+                            "' by " + dto.getUserId() + " from " + dto.getStartTime() + 
+                            " to " + dto.getEndTime() + " for: " + dto.getPurpose())
+                    .type(NotificationType.INFO)
+                    .actionUrl("/manager/bookings/" + savedBooking.getId())
+                    .build();
+            notificationService.createForRole(Role.MANAGER, dto.getUserId(), notificationRequest);
+        } catch (Exception e) {
+            // Log but don't fail the booking creation if notification fails
+            System.err.println("Failed to send manager notification: " + e.getMessage());
+        }
+        
+        return toDTO(savedBooking);
     }
 
     @Override
@@ -108,6 +130,14 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public List<BookingResponseDTO> getApprovedBookingsByResource(String resourceId) {
+        return bookingRepository.findByResourceIdAndStatus(resourceId, BookingStatus.APPROVED)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public BookingResponseDTO approveBooking(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found: " + id));
@@ -117,8 +147,24 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus(BookingStatus.APPROVED);
         Booking savedBooking = bookingRepository.save(booking);
         
-        // TODO: Send notifications asynchronously
-        // notifyBookingApproved(savedBooking);
+        // Notify the user that their booking has been approved
+        try {
+            CreateNotificationRequest notificationRequest = CreateNotificationRequest.builder()
+                    .title("✅ Booking Approved")
+                    .message("Your booking request for resource '" + booking.getResourceId() + 
+                            "' from " + booking.getStartTime() + " to " + booking.getEndTime() + 
+                            " has been approved!")
+                    .type(NotificationType.SUCCESS)
+                    .actionUrl("/bookings/" + savedBooking.getId())
+                    .build();
+            
+            // Get the recipient user by username
+            userRepository.findByUsername(booking.getUserId())
+                    .ifPresent(user -> notificationService.createForUser(user.getId(), "SYSTEM", notificationRequest));
+        } catch (Exception e) {
+            // Log but don't fail the approval if notification fails
+            System.err.println("Failed to send approval notification: " + e.getMessage());
+        }
         
         return toDTO(savedBooking);
     }
@@ -137,8 +183,23 @@ public class BookingServiceImpl implements BookingService {
         booking.setRejectionReason(reason);
         Booking savedBooking = bookingRepository.save(booking);
         
-        // TODO: Send rejection notification
-        // notifyBookingRejected(savedBooking, reason);
+        // Notify the user that their booking has been rejected
+        try {
+            CreateNotificationRequest notificationRequest = CreateNotificationRequest.builder()
+                    .title("❌ Booking Request Rejected")
+                    .message("Your booking request for resource '" + booking.getResourceId() + 
+                            "' has been rejected.\n\nReason: " + reason)
+                    .type(NotificationType.WARNING)
+                    .actionUrl("/bookings/" + savedBooking.getId())
+                    .build();
+            
+            // Get the recipient user by username
+            userRepository.findByUsername(booking.getUserId())
+                    .ifPresent(user -> notificationService.createForUser(user.getId(), "SYSTEM", notificationRequest));
+        } catch (Exception e) {
+            // Log but don't fail the rejection if notification fails
+            System.err.println("Failed to send rejection notification: " + e.getMessage());
+        }
         
         return toDTO(savedBooking);
     }

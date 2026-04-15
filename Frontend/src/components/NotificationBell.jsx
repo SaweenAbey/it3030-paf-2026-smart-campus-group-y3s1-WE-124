@@ -12,6 +12,8 @@ const typeBadgeClass = (t) => {
       return 'bg-amber-100 text-amber-800';
     case 'ERROR':
       return 'bg-rose-100 text-rose-800';
+    case 'REQUEST':
+      return 'bg-blue-100 text-blue-800';
     default:
       return 'bg-sky-100 text-sky-800';
   }

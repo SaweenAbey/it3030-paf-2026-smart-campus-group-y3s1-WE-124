@@ -38,8 +38,6 @@ const ManagerDashboard = () => {
     type: '',
     capacity: '',
     location: '',
-    availabilityStartTime: '',
-    availabilityEndTime: '',
     availabilityDurationMinutes: '',
     features: [],
     customFeature: '',
@@ -236,10 +234,6 @@ const ManagerDashboard = () => {
     }
     if (!resourceForm.location.trim()) {
       toast.error('Location is required');
-      return false;
-    }
-    if (!resourceForm.availabilityStartTime || !resourceForm.availabilityEndTime) {
-      toast.error('Available from and available until are required');
       return false;
     }
     if (resourceForm.availabilityDurationMinutes) {
@@ -792,34 +786,6 @@ const ManagerDashboard = () => {
                               <option key={status.value} value={status.value}>{status.label}</option>
                             ))}
                           </select>
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <label className="text-sm font-medium text-slate-700">Available from</label>
-                          <input
-                            type="time"
-                            name="availabilityStartTime"
-                            value={resourceForm.availabilityStartTime}
-                            onChange={handleResourceFieldChange}
-                            required
-                            step="60"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                            disabled={resourceSaving}
-                          />
-                        </div>
-
-                        <div className="flex flex-col gap-1">
-                          <label className="text-sm font-medium text-slate-700">Available until</label>
-                          <input
-                            type="time"
-                            name="availabilityEndTime"
-                            value={resourceForm.availabilityEndTime}
-                            onChange={handleResourceFieldChange}
-                            required
-                            step="60"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
-                            disabled={resourceSaving}
-                          />
                         </div>
 
                         <div className="flex flex-col gap-1 sm:col-span-2">

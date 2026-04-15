@@ -1,7 +1,6 @@
 package com.example.fullstack_backend.model;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -65,14 +64,8 @@ public class CampusResource {
     @Column(nullable = false, length = 255)
     private String location;
 
-    @Column(name = "availability_start_time")
-    private LocalTime availabilityStartTime;
-
-    @Column(name = "availability_end_time")
-    private LocalTime availabilityEndTime;
-
-        @Column(name = "availability_duration_minutes")
-        private Integer availabilityDurationMinutes;
+    @Column(name = "availability_duration_minutes")
+    private Integer availabilityDurationMinutes;
 
         @ElementCollection(fetch = FetchType.EAGER)
         @CollectionTable(
