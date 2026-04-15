@@ -1,5 +1,10 @@
 package com.example.fullstack_backend.service.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+
 import com.example.fullstack_backend.dto.BookingRequestDTO;
 import com.example.fullstack_backend.dto.BookingResponseDTO;
 import com.example.fullstack_backend.dto.BookingUpdateDTO;
@@ -7,18 +12,21 @@ import com.example.fullstack_backend.exception.ConflictException;
 import com.example.fullstack_backend.model.Booking;
 import com.example.fullstack_backend.model.Booking.BookingStatus;
 import com.example.fullstack_backend.repository.BookingRepository;
+import com.example.fullstack_backend.repository.CampusResourceRepository;
+import com.example.fullstack_backend.repository.UserRepository;
 import com.example.fullstack_backend.service.BookingService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import com.example.fullstack_backend.service.NotificationService;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
+    private final NotificationService notificationService;
+    private final CampusResourceRepository campusResourceRepository;
+    private final UserRepository userRepository;
 
     @Override
     public BookingResponseDTO createBooking(BookingRequestDTO dto) {
@@ -107,7 +115,12 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalArgumentException("Only PENDING bookings can be approved");
         }
         booking.setStatus(BookingStatus.APPROVED);
-        return toDTO(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // TODO: Send notifications asynchronously
+        // notifyBookingApproved(savedBooking);
+        
+        return toDTO(savedBooking);
     }
 
     @Override
@@ -122,7 +135,12 @@ public class BookingServiceImpl implements BookingService {
         }
         booking.setStatus(BookingStatus.REJECTED);
         booking.setRejectionReason(reason);
-        return toDTO(bookingRepository.save(booking));
+        Booking savedBooking = bookingRepository.save(booking);
+        
+        // TODO: Send rejection notification
+        // notifyBookingRejected(savedBooking, reason);
+        
+        return toDTO(savedBooking);
     }
 
     @Override

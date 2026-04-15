@@ -89,7 +89,12 @@ export default function BookingRequestsManager() {
       <div className="flex flex-wrap gap-3 mb-6 pb-4 border-b-2 border-slate-300">
         {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map((status) => {
           const count = bookingRequests.filter(b => status === 'ALL' ? true : b.status === status).length;
-          const statusIcons = { PENDING: '⏳', APPROVED: '✅', REJECTED: '❌', ALL: '📋' };
+          const statusIcons = { 
+            PENDING: <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 2m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, 
+            APPROVED: <svg className="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>, 
+            REJECTED: <svg className="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>, 
+            ALL: <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+          };
           const isActive = activeFilter === status;
           return (
             <button
@@ -99,7 +104,7 @@ export default function BookingRequestsManager() {
                 isActive ? 'bg-sky-600 text-white shadow-md' : 'bg-white text-slate-700 border-2 border-slate-300 hover:border-sky-400 hover:bg-sky-50'
               }`}
             >
-              <span>{statusIcons[status]}</span> {status} ({count})
+              {statusIcons[status]} {status} ({count})
             </button>
           );
         })}
@@ -108,7 +113,11 @@ export default function BookingRequestsManager() {
       {/* Bookings Table */}
       {filteredRequests.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border-2 border-dashed border-slate-300">
-          <div className="text-6xl mb-4">📭</div>
+          <div className="mb-4 flex justify-center">
+            <svg className="w-16 h-16 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
           <h3 className="text-2xl font-bold text-slate-900 mb-2">No Booking Requests</h3>
           <p className="text-slate-600">
             There are no {activeFilter !== 'ALL' ? activeFilter.toLowerCase() : ''} booking requests to display
@@ -153,19 +162,35 @@ export default function BookingRequestsManager() {
                   <td className="px-6 py-4">
                     {request.status === 'PENDING' && (
                       <div className="flex gap-2 flex-wrap">
-                        <button onClick={() => handleApprove(request.id)} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold transition-colors duration-200">
-                          ✅ Approve
+                        <button onClick={() => handleApprove(request.id)} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold transition-colors duration-200 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          Approve
                         </button>
-                        <button onClick={() => setShowRejectModal(request.id)} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-xs font-semibold transition-colors duration-200">
-                          ❌ Reject
+                        <button onClick={() => setShowRejectModal(request.id)} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-xs font-semibold transition-colors duration-200 flex items-center gap-1">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                          </svg>
+                          Reject
                         </button>
                       </div>
                     )}
                     {request.status === 'REJECTED' && (
-                      <div className="text-xs text-red-700 font-medium">💬 {request.rejectionReason}</div>
+                      <div className="text-xs text-red-700 font-medium flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {request.rejectionReason}
+                      </div>
                     )}
                     {request.status === 'APPROVED' && (
-                      <span className="text-xs text-emerald-700 font-bold">✓ Approved</span>
+                      <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        Approved
+                      </span>
                     )}
                   </td>
                 </tr>
@@ -199,8 +224,11 @@ export default function BookingRequestsManager() {
               <button onClick={() => setShowRejectModal(null)} className="px-6 py-2 border-2 border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-100 transition-colors duration-200">
                 Cancel
               </button>
-              <button onClick={handleReject} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors duration-200">
-                ❌ Reject Request
+              <button onClick={handleReject} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors duration-200 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                Reject Request
               </button>
             </div>
           </div>

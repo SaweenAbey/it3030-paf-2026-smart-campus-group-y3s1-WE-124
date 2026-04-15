@@ -22,9 +22,14 @@ export default function BookingCard({
             display: 'flex', alignItems: 'center',
             gap: '10px', marginBottom: '12px'
           }}>
-            <h3 style={{ color: '#0e4d7b', fontSize: '16px', fontWeight: '700' }}>
-              🏛️ {booking.resourceId}
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg style={{ width: '18px', height: '18px', color: '#0e4d7b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+              </svg>
+              <h3 style={{ color: '#0e4d7b', fontSize: '16px', fontWeight: '700' }}>
+                {booking.resourceId}
+              </h3>
+            </div>
             <span className={`status-badge status-${booking.status}`}>
               {booking.status}
             </span>
@@ -38,8 +43,11 @@ export default function BookingCard({
             background: '#f0f4f8', borderRadius: '8px',
             padding: '10px 14px', marginBottom: '10px'
           }}>
-            <p style={{ fontSize: '14px', color: '#0e4d7b', fontWeight: '600', marginBottom: '2px' }}>
-              📅 Booking Period
+            <p style={{ fontSize: '14px', color: '#0e4d7b', fontWeight: '600', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Booking Period
             </p>
             <p style={{ fontSize: '14px', color: '#1a2332' }}>
               {fmt(booking.startTime)} → {fmt(booking.endTime)}
@@ -47,16 +55,25 @@ export default function BookingCard({
           </div>
 
           {/* Details */}
-          <p style={{ fontSize: '14px', marginBottom: '6px' }}>
-            <strong>📝 Purpose:</strong> {booking.purpose}
+          <p style={{ fontSize: '14px', marginBottom: '6px', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+            <svg style={{ width: '16px', height: '16px', marginTop: '2px', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span><strong>Purpose:</strong> {booking.purpose}</span>
           </p>
           {booking.expectedAttendees && (
-            <p style={{ fontSize: '14px', marginBottom: '6px' }}>
-              <strong>👥 Attendees:</strong> {booking.expectedAttendees} people
+            <p style={{ fontSize: '14px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2z" />
+              </svg>
+              <span><strong>Attendees:</strong> {booking.expectedAttendees} people</span>
             </p>
           )}
-          <p style={{ fontSize: '14px', marginBottom: '6px' }}>
-            <strong>👤 User:</strong> {booking.userId}
+          <p style={{ fontSize: '14px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <svg style={{ width: '16px', height: '16px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 12a3 3 0 11-6 0 3 3 0 016 0zm6 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span><strong>User:</strong> {booking.userId}</span>
           </p>
 
           {/* Rejection Reason */}
