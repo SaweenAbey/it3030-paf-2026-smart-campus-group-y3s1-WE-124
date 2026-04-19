@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ScrollBasedVelocity } from '@/components/ui/scroll-based-velocity';
+import { reviewAPI } from '../services/api';
 
 import uni360Logo from '../assets/uni360-logo.svg';
 import libImg from '../assets/lib.jpg';
@@ -14,23 +15,100 @@ import sliitLibAltImg from '../assets/sliitlib.png';
 const Home = () => {
   const { user, isAuthenticated } = useAuth();
   const [activeSlide, setActiveSlide] = useState(0);
+  const [isSliderPaused, setIsSliderPaused] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const homeRef = useRef(null);
 
   const slides = useMemo(() => ([
-    { src: sliitImg, alt: 'University campus building exterior' },
-    { src: libImg, alt: 'University library and study spaces' },
-    { src: sliit2Img, alt: 'University facilities and learning spaces' },
-    { src: sliitLibImg, alt: 'University library building' },
-    { src: sliitLibAltImg, alt: 'University library interior and collections' },
-    { src: sliit3Img, alt: 'University campus operations and facilities' },
+    {
+      src: sliitImg,
+      alt: 'University campus building exterior',
+      tag: 'Campus Intelligence',
+      title: 'Run Learning Spaces with Real-Time Clarity',
+      description: 'Coordinate classrooms, labs, and student resources with one connected operating layer.',
+      metric: '98.7%',
+      metricLabel: 'On-time room readiness',
+    },
+    {
+      src: libImg,
+      alt: 'University library and study spaces',
+      tag: 'Academic Operations',
+      title: 'Transform Library & Asset Access into a Seamless Flow',
+      description: 'Give students faster access to study areas, digital resources, and support services.',
+      metric: '500K+',
+      metricLabel: 'Learning assets indexed',
+    },
+    {
+      src: sliit2Img,
+      alt: 'University facilities and learning spaces',
+      tag: 'Facilities Performance',
+      title: 'Book, Approve, and Track Every Space with Confidence',
+      description: 'Prevent conflicts and keep capacity visible across departments and student services.',
+      metric: '120+',
+      metricLabel: 'Smart spaces connected',
+    },
+    {
+      src: sliitLibImg,
+      alt: 'University library building',
+      tag: 'Service Reliability',
+      title: 'Resolve Maintenance Issues Before They Disrupt Learning',
+      description: 'Prioritize incidents, assign technicians quickly, and close with a complete audit trail.',
+      metric: '< 6h',
+      metricLabel: 'Average resolution time',
+    },
+    {
+      src: sliitLibAltImg,
+      alt: 'University library interior and collections',
+      tag: 'Governance & Insight',
+      title: 'Make Every Decision Backed by Trusted Campus Data',
+      description: 'Enable role-based dashboards for students, staff, technicians, and administrators.',
+      metric: '24/7',
+      metricLabel: 'Operational visibility',
+    },
+    {
+      src: sliit3Img,
+      alt: 'University campus operations and facilities',
+      tag: 'Unified Experience',
+      title: 'Deliver One Professional Platform Across the Entire Campus',
+      description: 'Unify booking, incidents, notifications, and reporting in a polished digital experience.',
+      metric: '4 Roles',
+      metricLabel: 'Securely supported',
+    },
   ]), []);
 
   useEffect(() => {
+    if (isSliderPaused) return undefined;
+
     const id = window.setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % slides.length);
     }, 4500);
     return () => window.clearInterval(id);
-  }, [slides.length]);
+  }, [isSliderPaused, slides.length]);
+
+  const goToNextSlide = () => {
+    setActiveSlide((prev) => (prev + 1) % slides.length);
+  };
+
+  const goToPrevSlide = () => {
+    setActiveSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
+
+  useEffect(() => {
+    const fetchHomeReviews = async () => {
+      try {
+        const response = await reviewAPI.getPublicReviews(6);
+        setReviews(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        console.error('Failed to fetch reviews for home page:', error);
+        setReviews([]);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    fetchHomeReviews();
+  }, []);
 
   useEffect(() => {
     if (!homeRef.current) return;
@@ -203,8 +281,12 @@ const Home = () => {
     <div ref={homeRef} className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e0f2fe,transparent_35%),radial-gradient(circle_at_bottom_left,#bae6fd,transparent_40%),#f8fafc]">
       <section className="relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-slate-100 shadow-[0_45px_90px_-45px_rgba(2,132,199,0.45)]">
-            <div className="relative h-[70vh] min-h-[560px] max-h-[760px] sm:min-h-[620px]">
+          <div
+            className="relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-slate-100 shadow-[0_45px_90px_-45px_rgba(2,132,199,0.45)]"
+            onMouseEnter={() => setIsSliderPaused(true)}
+            onMouseLeave={() => setIsSliderPaused(false)}
+          >
+            <div className="relative h-[70vh] min-h-140 max-h-190 sm:min-h-155">
               {slides.map((s, idx) => (
                 <img
                   key={s.src}
@@ -217,8 +299,9 @@ const Home = () => {
                 />
               ))}
 
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/30 to-slate-950/45" />
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_18%,rgba(56,189,248,0.4),transparent_32%)]" />
+              <div className="absolute inset-0 bg-linear-to-r from-[#020617]/80 via-[#0f172a]/40 to-[#020617]/70" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(6,182,212,0.45),transparent_34%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_100%,rgba(59,130,246,0.28),transparent_40%)]" />
 
               <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-4 sm:inset-x-8">
                 <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold tracking-wide text-white backdrop-blur-md sm:px-4">
@@ -226,23 +309,23 @@ const Home = () => {
                   UNI 360 Campus OS
                 </div>
                 <div className="hidden rounded-full border border-emerald-300/40 bg-emerald-400/20 px-3 py-1 text-xs font-semibold text-emerald-100 backdrop-blur-md sm:block">
-                  Live Status: All Systems Healthy
+                  {isSliderPaused ? 'Showcase Paused' : 'Live Status: All Systems Healthy'}
                 </div>
               </div>
 
-              <div className="absolute bottom-24 left-5 right-5 grid items-end gap-5 lg:grid-cols-[1fr_auto] sm:left-8 sm:right-8">
-                <div className="max-w-2xl rounded-3xl border border-white/20 bg-slate-900/35 p-5 backdrop-blur-lg sm:p-7">
-                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">University Learning + Operations</p>
+              <div className="absolute bottom-28 left-5 right-5 grid items-end gap-5 lg:grid-cols-[1fr_auto] sm:left-8 sm:right-8">
+                <div className="max-w-2xl rounded-3xl border border-white/20 bg-slate-900/40 p-5 backdrop-blur-lg sm:p-7">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">{slides[activeSlide].tag}</p>
                   <h1 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl lg:text-[3.25rem] lg:leading-[1.05]">
-                    Build a Smarter Campus Experience for Every Student
+                    {slides[activeSlide].title}
                   </h1>
                   <p className="mt-3 max-w-lg text-sm text-slate-100/90 sm:text-base">
-                    Connect learning resources, room bookings, maintenance, and governance in one modern digital hub.
+                    {slides[activeSlide].description}
                   </p>
                   <div className="mt-6 flex flex-wrap gap-3">
                     <Link
                       to="/bookings"
-                      className="rounded-2xl bg-sky-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-sky-300"
+                      className="rounded-2xl bg-cyan-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-cyan-300"
                     >
                       Explore Resources
                     </Link>
@@ -253,9 +336,17 @@ const Home = () => {
                       {isAuthenticated() ? 'Open Workspace' : 'Sign In'}
                     </Link>
                   </div>
+
+                  <div className="mt-6 overflow-hidden rounded-2xl border border-cyan-200/25 bg-slate-950/45 px-4 py-3">
+                    <p className="text-[11px] uppercase tracking-[0.2em] text-cyan-200/90">Current Slide Insight</p>
+                    <div className="mt-2 flex items-end gap-3">
+                      <p className="text-3xl font-black leading-none text-white">{slides[activeSlide].metric}</p>
+                      <p className="pb-1 text-xs font-medium text-slate-200">{slides[activeSlide].metricLabel}</p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid w-full max-w-[280px] gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:justify-self-end">
+                <div className="grid w-full max-w-70 gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:justify-self-end">
                   {[
                     { label: 'Learning Assets', value: '500K+' },
                     { label: 'Smart Spaces', value: '120+' },
@@ -270,22 +361,44 @@ const Home = () => {
               </div>
 
               <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between sm:left-8 sm:right-8">
-                <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-md">
+                <div className="flex items-center gap-2 rounded-2xl border border-white/20 bg-slate-900/30 px-3 py-2 backdrop-blur-md">
+                  <button
+                    type="button"
+                    onClick={goToPrevSlide}
+                    className="rounded-xl border border-white/20 bg-white/10 p-2 text-white transition hover:bg-white/20"
+                    aria-label="Previous slide"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
                   {slides.map((_, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => setActiveSlide(idx)}
                       className={`h-2.5 rounded-full transition-all ${
-                        idx === activeSlide ? 'w-8 bg-white' : 'w-2.5 bg-white/60 hover:bg-white/90'
+                        idx === activeSlide ? 'w-8 bg-cyan-300' : 'w-2.5 bg-white/60 hover:bg-white/90'
                       }`}
                       aria-label={`Go to slide ${idx + 1}`}
                     />
                   ))}
+
+                  <button
+                    type="button"
+                    onClick={goToNextSlide}
+                    className="rounded-xl border border-white/20 bg-white/10 p-2 text-white transition hover:bg-white/20"
+                    aria-label="Next slide"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md">
-                  Scroll
+                  {activeSlide + 1} / {slides.length}
                   <svg className="h-4 w-4 animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
@@ -298,7 +411,7 @@ const Home = () => {
 
       <section className="relative -mt-7 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
-          <div className="rounded-3xl border border-sky-300/35 bg-gradient-to-r from-slate-900/70 via-sky-950/60 to-slate-900/70 p-5 shadow-xl backdrop-blur-md sm:p-7">
+          <div className="rounded-3xl border border-sky-300/35 bg-linear-to-r from-slate-900/70 via-sky-950/60 to-slate-900/70 p-5 shadow-xl backdrop-blur-md sm:p-7">
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">Core Capabilities in Motion</p>
               <p className="text-[11px] font-medium text-sky-100/80">Scroll to feel the velocity effect</p>
@@ -314,7 +427,7 @@ const Home = () => {
       </section>
 
       {/* University Learning Hub Section */}
-      <section className="relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-blue-50">
+      <section className="relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8 bg-linear-to-b from-slate-50 to-blue-50">
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Learning Excellence</p>
@@ -365,13 +478,13 @@ const Home = () => {
               }
             ].map((resource, idx) => (
               <div key={idx} className="group relative overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300">
-                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-sky-400 to-sky-600">
+                <div className="relative h-48 overflow-hidden bg-linear-to-br from-sky-400 to-sky-600">
                   <img 
                     src={resource.image} 
                     alt={resource.title}
                     className="h-full w-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-slate-900/80 to-transparent" />
                   <div className="absolute bottom-4 left-4 text-4xl">{resource.icon}</div>
                 </div>
                 <div className="p-5">
@@ -391,93 +504,86 @@ const Home = () => {
       <section className="relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8 bg-white">
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Success Stories</p>
-            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">What Students Say</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-600">
-              Hear from our students about their learning experience and success stories
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Verified Reviews</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl"> Support Feedback</h2>
+           
           </div>
 
-          {/* Reviews Carousel */}
           <div className="relative">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  name: "Ahmed Hassan",
-                  role: "Computer Science Student",
-                  image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-                  review: "The learning hub transformed my academic journey. The resources and facilities are world-class!",
-                  rating: 5
-                },
-                {
-                  name: "Fatima Ali",
-                  role: "Engineering Student",
-                  image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
-                  review: "The research labs gave me hands-on experience that you can't get from textbooks. Highly recommended!",
-                  rating: 5
-                },
-                {
-                  name: "Muhammad Khan",
-                  role: "Business Administration",
-                  image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
-                  review: "The tutoring center and peer mentoring helped me improve my grades significantly. Great support!",
-                  rating: 5
-                },
-                {
-                  name: "Aisha Malik",
-                  role: "Medicine Student",
-                  image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
-                  review: "The digital library has access to every resource I need for my studies. Exceptional facility!",
-                  rating: 5
-                },
-                {
-                  name: "Hassan Ahmed",
-                  role: "Architecture Student",
-                  image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-                  review: "The smart classrooms and design labs are equipped with the latest technology. Best learning environment!",
-                  rating: 5
-                },
-                {
-                  name: "Zainab Khan",
-                  role: "Mathematics Student",
-                  image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=400&fit=crop",
-                  review: "Collaborative study spaces and expert tutors made complex concepts easy to understand. Grateful!",
-                  rating: 5
-                }
-              ].map((review, idx) => (
-                <div key={idx} className="group rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-200 p-6 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex items-center gap-4 mb-4">
-                    <img 
-                      src={review.image} 
-                      alt={review.name}
-                      className="h-14 w-14 rounded-full object-cover ring-2 ring-sky-300"
-                    />
-                    <div>
-                      <h3 className="font-bold text-slate-900">{review.name}</h3>
-                      <p className="text-sm text-sky-600">{review.role}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="mb-4 flex gap-1">
-                    {Array(review.rating).fill(0).map((_, i) => (
-                      <span key={i} className="text-lg">⭐</span>
-                    ))}
-                  </div>
-                  
-                  <p className="text-slate-700 italic">"{review.review}"</p>
-                </div>
-              ))}
-            </div>
-          </div>
+            {reviewsLoading ? (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, idx) => (
+                  <div key={idx} className="h-52 animate-pulse rounded-2xl border border-slate-200 bg-slate-100" />
+                ))}
+              </div>
+            ) : reviews.length === 0 ? (
+              <div className="rounded-3xl border border-slate-200 bg-linear-to-r from-slate-50 to-sky-50 px-6 py-10 text-center">
+                <p className="text-base font-semibold text-slate-900">No reviews submitted yet.</p>
+                <p className="mt-2 text-sm text-slate-600">Be the first to share your support experience with UNI 360.</p>
+              </div>
+            ) : (
+              <div className={`grid gap-6 ${reviews.length === 1 ? 'mx-auto max-w-xl grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+                {reviews.map((review) => {
+                  const date = review.createdAt
+                    ? new Date(review.createdAt).toLocaleDateString()
+                    : 'Recently';
+                  const initials = (review.userName || review.username || 'U')
+                    .split(' ')
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0]?.toUpperCase())
+                    .join('');
 
-          {/* CTA Button */}
-          <div className="mt-12 text-center">
-            <Link
-              to="/bookings"
-              className="inline-block rounded-2xl bg-gradient-to-r from-sky-500 to-sky-600 px-8 py-4 font-semibold text-white transition hover:shadow-lg hover:from-sky-600 hover:to-sky-700"
-            >
-              Explore Learning Resources →
-            </Link>
+                  return (
+                    <article
+                      key={review.id}
+                      className="group relative overflow-hidden rounded-3xl border border-slate-200/90 bg-linear-to-b from-white to-slate-50 p-6 shadow-[0_14px_40px_-28px_rgba(15,23,42,0.45)] transition-all duration-300 hover:-translate-y-1 hover:border-sky-200 hover:shadow-[0_20px_50px_-28px_rgba(2,132,199,0.35)]"
+                    >
+                      <div className="mb-5 flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {review.userProfileImageUrl ? (
+                            <img
+                              src={review.userProfileImageUrl}
+                              alt={review.userName || review.username}
+                              className="h-12 w-12 rounded-full border border-sky-100 object-cover ring-2 ring-white"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-linear-to-br from-sky-700 to-cyan-500 text-sm font-bold text-white ring-2 ring-white">
+                              {initials || 'U'}
+                            </div>
+                          )}
+                          <div>
+                            <h3 className="text-base font-semibold text-slate-900">{review.userName || review.username}</h3>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-sky-700">{review.userRole}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-sky-500 transition-colors group-hover:bg-sky-100 group-hover:text-sky-600">
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                              <path d="M7.17 6A5.99 5.99 0 0 0 3 11.74V18h6.26v-6.26H6.3A3.01 3.01 0 0 1 8.78 9.3L10 9.09V6H7.17Zm9 0A5.99 5.99 0 0 0 12 11.74V18h6.26v-6.26H15.3a3.01 3.01 0 0 1 2.48-2.44L19 9.09V6h-2.83Z" />
+                            </svg>
+                          </span>
+                          <p className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500">{date}</p>
+                        </div>
+                      </div>
+
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold tracking-wide text-amber-600">{'★'.repeat(Math.max(1, Math.min(5, review.rating || 5)))}</p>
+                        {review.supportTopic ? (
+                          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.13em] text-cyan-700">
+                            {review.supportTopic}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <h4 className="text-lg font-bold leading-snug text-slate-900">{review.title}</h4>
+                      <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-slate-600">{review.comment}</p>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -498,7 +604,7 @@ const Home = () => {
               <article key={m.title} className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <div className={`inline-flex items-center gap-2 rounded-full bg-gradient-to-r ${m.accent} px-3 py-1 text-xs font-semibold text-white`}>
+                    <div className={`inline-flex items-center gap-2 rounded-full bg-linear-to-r ${m.accent} px-3 py-1 text-xs font-semibold text-white`}>
                       <span className="inline-flex">{m.icon}</span>
                       {m.subtitle}
                     </div>
@@ -563,7 +669,7 @@ const Home = () => {
 
       <section className="px-4 pb-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="rounded-[2rem] border border-slate-200 bg-gradient-to-br from-slate-900 via-sky-900 to-slate-900 p-8 sm:p-10">
+          <div className="rounded-[2rem] border border-slate-200 bg-linear-to-br from-slate-900 via-sky-900 to-slate-900 p-8 sm:p-10">
             <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-widest text-sky-200">Workflow-first</p>

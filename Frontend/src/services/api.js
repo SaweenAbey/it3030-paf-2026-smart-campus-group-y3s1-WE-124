@@ -112,4 +112,11 @@ export const bookingAPI = {
   cancelBooking: (id) => api.delete(`/bookings/${id}`),
 };
 
+// Review API calls
+export const reviewAPI = {
+  getPublicReviews: (limit = 6) => api.get('/reviews/public', { params: { limit } }),
+  createReview: (data) => api.post('/reviews', data),
+  getMyReviews: () => api.get('/reviews/my'),
+};
+
 export default api;

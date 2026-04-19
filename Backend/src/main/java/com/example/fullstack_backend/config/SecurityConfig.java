@@ -71,6 +71,7 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/reviews/public").permitAll()
                         .requestMatchers("/error").permitAll()
                         
                         // Admin only endpoints
