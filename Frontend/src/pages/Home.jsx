@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ScrollBasedVelocity } from '@/components/ui/scroll-based-velocity';
 
 import uni360Logo from '../assets/uni360-logo.svg';
 import libImg from '../assets/lib.jpg';
@@ -13,6 +14,7 @@ import sliitLibAltImg from '../assets/sliitlib.png';
 const Home = () => {
   const { user, isAuthenticated } = useAuth();
   const [activeSlide, setActiveSlide] = useState(0);
+  const homeRef = useRef(null);
 
   const slides = useMemo(() => ([
     { src: sliitImg, alt: 'University campus building exterior' },
@@ -29,6 +31,38 @@ const Home = () => {
     }, 4500);
     return () => window.clearInterval(id);
   }, [slides.length]);
+
+  useEffect(() => {
+    if (!homeRef.current) return;
+
+    const revealTargets = Array.from(homeRef.current.querySelectorAll('section, article'));
+
+    revealTargets.forEach((el, index) => {
+      el.classList.add('reveal-on-scroll');
+      el.style.setProperty('--reveal-delay', `${Math.min((index % 8) * 70, 420)}ms`);
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        threshold: 0.15,
+        rootMargin: '0px 0px -8% 0px',
+      }
+    );
+
+    revealTargets.forEach((el) => observer.observe(el));
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const roleKey = useMemo(() => (user?.role || '').toUpperCase(), [user?.role]);
   const dashboardPath = useMemo(() => {
@@ -166,75 +200,284 @@ const Home = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e0f2fe,transparent_35%),radial-gradient(circle_at_bottom_left,#bae6fd,transparent_40%),#f8fafc]">
-      <section className="relative overflow-hidden px-4 pb-20 pt-10 sm:px-6 lg:px-8">
+    <div ref={homeRef} className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e0f2fe,transparent_35%),radial-gradient(circle_at_bottom_left,#bae6fd,transparent_40%),#f8fafc]">
+      <section className="relative overflow-hidden px-4 pb-10 pt-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <div className="[perspective:1200px]">
-              <div
-                className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-[0_35px_80px_-35px_rgba(2,132,199,0.35)] transition-transform duration-300"
-              >
-                {/* Full-bleed image slider */}
-                <div className="relative h-[420px] sm:h-[520px] lg:h-[560px]">
-                  {slides.map((s, idx) => (
-                    <img
-                      key={s.src}
-                      src={s.src}
-                      alt={s.alt}
-                      className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
-                        idx === activeSlide ? 'opacity-100' : 'opacity-0'
-                      }`}
-                      loading={idx === 0 ? 'eager' : 'lazy'}
-                    />
-                  ))}
+          <div className="relative overflow-hidden rounded-[2.25rem] border border-slate-200/80 bg-slate-100 shadow-[0_45px_90px_-45px_rgba(2,132,199,0.45)]">
+            <div className="relative h-[70vh] min-h-[560px] max-h-[760px] sm:min-h-[620px]">
+              {slides.map((s, idx) => (
+                <img
+                  key={s.src}
+                  src={s.src}
+                  alt={s.alt}
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                    idx === activeSlide ? 'opacity-100' : 'opacity-0'
+                  }`}
+                  loading={idx === 0 ? 'eager' : 'lazy'}
+                />
+              ))}
 
-                  {/* Overlays for readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-slate-950/15 to-slate-950/10" />
-                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/35 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-950/30 to-slate-950/45" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_18%,rgba(56,189,248,0.4),transparent_32%)]" />
 
-                  {/* Hero text overlay */}
-                  <div className="absolute left-5 top-5 right-5">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white/90 backdrop-blur-md">
-                      Welcome to UNI 360
-                      <span className="h-1 w-1 rounded-full bg-white/60" />
-                      Operations Hub
-                    </div>
-                    <h2 className="mt-4 max-w-xl text-3xl font-black leading-tight text-white sm:text-4xl lg:text-5xl">
-                      Smart University Operations Hub
-                    </h2>
-                    <p className="mt-3 max-w-xl text-sm text-white/85 sm:text-base">
-                      Bookings • Maintenance • Incidents • Audit trail
-                    </p>
-                  </div>
-
-                  {/* Dots */}
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-end">
-                    <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 backdrop-blur-md">
-                      {slides.map((_, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setActiveSlide(idx)}
-                          className={`h-2.5 rounded-full transition-all ${
-                            idx === activeSlide ? 'w-8 bg-white' : 'w-2.5 bg-white/55 hover:bg-white/80'
-                          }`}
-                          aria-label={`Go to slide ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Scroll indicator */}
-                  <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white backdrop-blur-md animate-bounce">
-                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+              <div className="absolute inset-x-5 top-5 flex items-center justify-between gap-4 sm:inset-x-8">
+                <div className="inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold tracking-wide text-white backdrop-blur-md sm:px-4">
+                  <img src={uni360Logo} alt="UNI360" className="h-6 w-6 rounded-full bg-white/80 p-1" />
+                  UNI 360 Campus OS
+                </div>
+                <div className="hidden rounded-full border border-emerald-300/40 bg-emerald-400/20 px-3 py-1 text-xs font-semibold text-emerald-100 backdrop-blur-md sm:block">
+                  Live Status: All Systems Healthy
                 </div>
               </div>
+
+              <div className="absolute bottom-24 left-5 right-5 grid items-end gap-5 lg:grid-cols-[1fr_auto] sm:left-8 sm:right-8">
+                <div className="max-w-2xl rounded-3xl border border-white/20 bg-slate-900/35 p-5 backdrop-blur-lg sm:p-7">
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-200">University Learning + Operations</p>
+                  <h1 className="mt-3 text-3xl font-black leading-tight text-white sm:text-4xl lg:text-[3.25rem] lg:leading-[1.05]">
+                    Build a Smarter Campus Experience for Every Student
+                  </h1>
+                  <p className="mt-3 max-w-lg text-sm text-slate-100/90 sm:text-base">
+                    Connect learning resources, room bookings, maintenance, and governance in one modern digital hub.
+                  </p>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <Link
+                      to="/bookings"
+                      className="rounded-2xl bg-sky-400 px-5 py-2.5 text-sm font-bold text-slate-900 transition hover:bg-sky-300"
+                    >
+                      Explore Resources
+                    </Link>
+                    <Link
+                      to={isAuthenticated() ? dashboardPath : '/login'}
+                      className="rounded-2xl border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20"
+                    >
+                      {isAuthenticated() ? 'Open Workspace' : 'Sign In'}
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="grid w-full max-w-[280px] gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:justify-self-end">
+                  {[
+                    { label: 'Learning Assets', value: '500K+' },
+                    { label: 'Smart Spaces', value: '120+' },
+                    { label: 'Avg. Resolution', value: '< 6h' },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-white/20 bg-slate-900/35 p-3.5 text-white backdrop-blur-lg">
+                      <p className="text-xs uppercase tracking-widest text-slate-200/80">{item.label}</p>
+                      <p className="mt-1 text-[1.7rem] font-black leading-none">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between sm:left-8 sm:right-8">
+                <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-2 backdrop-blur-md">
+                  {slides.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveSlide(idx)}
+                      className={`h-2.5 rounded-full transition-all ${
+                        idx === activeSlide ? 'w-8 bg-white' : 'w-2.5 bg-white/60 hover:bg-white/90'
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md">
+                  Scroll
+                  <svg className="h-4 w-4 animate-bounce" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative -mt-7 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="rounded-3xl border border-sky-300/35 bg-gradient-to-r from-slate-900/70 via-sky-950/60 to-slate-900/70 p-5 shadow-xl backdrop-blur-md sm:p-7">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">Core Capabilities in Motion</p>
+              <p className="text-[11px] font-medium text-sky-100/80">Scroll to feel the velocity effect</p>
+            </div>
+
+            <ScrollBasedVelocity
+              text="Bookings • Learning Hub • Maintenance • Incidents • Role-Based Access • Audit Trail • Notifications • Reports"
+              default_velocity={1.2}
+              className="font-display text-center text-base font-bold tracking-[-0.01em] text-sky-100 drop-shadow sm:text-xl"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* University Learning Hub Section */}
+      <section className="relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8 bg-gradient-to-b from-slate-50 to-blue-50">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Learning Excellence</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">University Learning Hub</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-600">
+              Explore comprehensive learning resources, facilities, and support systems designed for student success
+            </p>
+          </div>
+
+          {/* Learning Resources Cards */}
+          <div className="grid gap-6 md:grid-cols-3 mb-16">
+            {[
+              {
+                title: "Digital Library",
+                desc: "Access to 500,000+ academic resources, journals, and e-books available 24/7",
+                image: "https://images.unsplash.com/photo-150784272343-583f20270319?w=600&h=400&fit=crop",
+                icon: "📚"
+              },
+              {
+                title: "Smart Classrooms",
+                desc: "State-of-the-art learning spaces with interactive boards and collaborative tools",
+                image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=400&fit=crop",
+                icon: "🎓"
+              },
+              {
+                title: "Research Labs",
+                desc: "Modern facilities equipped for cutting-edge research and practical learning",
+                image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=600&h=400&fit=crop",
+                icon: "🔬"
+              },
+              {
+                title: "Study Spaces",
+                desc: "Dedicated quiet zones and collaborative study areas for all learning styles",
+                image: "https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=600&h=400&fit=crop",
+                icon: "✏️"
+              },
+              {
+                title: "Tutoring Center",
+                desc: "Expert tutors and peer mentoring programs across all subjects and courses",
+                image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
+                icon: "👨‍🏫"
+              },
+              {
+                title: "Tech Lab",
+                desc: "Computer labs with latest software for coding, design, and digital skills",
+                image: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&h=400&fit=crop",
+                icon: "💻"
+              }
+            ].map((resource, idx) => (
+              <div key={idx} className="group relative overflow-hidden rounded-2xl bg-white shadow-md hover:shadow-xl transition-all duration-300">
+                <div className="relative h-48 overflow-hidden bg-gradient-to-br from-sky-400 to-sky-600">
+                  <img 
+                    src={resource.image} 
+                    alt={resource.title}
+                    className="h-full w-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
+                  <div className="absolute bottom-4 left-4 text-4xl">{resource.icon}</div>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-lg font-bold text-slate-900">{resource.title}</h3>
+                  <p className="mt-2 text-sm text-slate-600">{resource.desc}</p>
+                  <button className="mt-4 inline-block text-sm font-semibold text-sky-600 hover:text-sky-700 transition">
+                    Learn More →
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Student Reviews & Testimonials Section */}
+      <section className="relative overflow-hidden px-4 py-20 sm:px-6 lg:px-8 bg-white">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-sky-600">Success Stories</p>
+            <h2 className="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">What Students Say</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-lg text-slate-600">
+              Hear from our students about their learning experience and success stories
+            </p>
+          </div>
+
+          {/* Reviews Carousel */}
+          <div className="relative">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  name: "Ahmed Hassan",
+                  role: "Computer Science Student",
+                  image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+                  review: "The learning hub transformed my academic journey. The resources and facilities are world-class!",
+                  rating: 5
+                },
+                {
+                  name: "Fatima Ali",
+                  role: "Engineering Student",
+                  image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
+                  review: "The research labs gave me hands-on experience that you can't get from textbooks. Highly recommended!",
+                  rating: 5
+                },
+                {
+                  name: "Muhammad Khan",
+                  role: "Business Administration",
+                  image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
+                  review: "The tutoring center and peer mentoring helped me improve my grades significantly. Great support!",
+                  rating: 5
+                },
+                {
+                  name: "Aisha Malik",
+                  role: "Medicine Student",
+                  image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
+                  review: "The digital library has access to every resource I need for my studies. Exceptional facility!",
+                  rating: 5
+                },
+                {
+                  name: "Hassan Ahmed",
+                  role: "Architecture Student",
+                  image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+                  review: "The smart classrooms and design labs are equipped with the latest technology. Best learning environment!",
+                  rating: 5
+                },
+                {
+                  name: "Zainab Khan",
+                  role: "Mathematics Student",
+                  image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=400&h=400&fit=crop",
+                  review: "Collaborative study spaces and expert tutors made complex concepts easy to understand. Grateful!",
+                  rating: 5
+                }
+              ].map((review, idx) => (
+                <div key={idx} className="group rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 border border-sky-200 p-6 shadow-md hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                  <div className="flex items-center gap-4 mb-4">
+                    <img 
+                      src={review.image} 
+                      alt={review.name}
+                      className="h-14 w-14 rounded-full object-cover ring-2 ring-sky-300"
+                    />
+                    <div>
+                      <h3 className="font-bold text-slate-900">{review.name}</h3>
+                      <p className="text-sm text-sky-600">{review.role}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4 flex gap-1">
+                    {Array(review.rating).fill(0).map((_, i) => (
+                      <span key={i} className="text-lg">⭐</span>
+                    ))}
+                  </div>
+                  
+                  <p className="text-slate-700 italic">"{review.review}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* CTA Button */}
+          <div className="mt-12 text-center">
+            <Link
+              to="/bookings"
+              className="inline-block rounded-2xl bg-gradient-to-r from-sky-500 to-sky-600 px-8 py-4 font-semibold text-white transition hover:shadow-lg hover:from-sky-600 hover:to-sky-700"
+            >
+              Explore Learning Resources →
+            </Link>
           </div>
         </div>
       </section>
