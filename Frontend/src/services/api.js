@@ -119,4 +119,10 @@ export const reviewAPI = {
   getMyReviews: () => api.get('/reviews/my'),
 };
 
+// Chatbot API calls
+export const chatbotAPI = {
+  ask: (question) => api.post('/chatbot/ask', { question }),
+  getHelp: () => api.get('/chatbot/help'),
+};
+
 export default api;
