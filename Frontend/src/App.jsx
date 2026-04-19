@@ -19,6 +19,9 @@ import ResourceDetailsPage from './pages/ResourceDetailsPage';
 import NotificationCreate from './pages/NotificationCreate';
 import Services from './pages/Services';
 import ResourcesCatalogue from './pages/resources/ResourcesCatalogue';
+import Support from './pages/Support';
+import ReviewSubmitPage from './pages/ReviewSubmitPage';
+import ReviewSubmittedPage from './pages/ReviewSubmittedPage';
 
 const getDefaultRouteByRole = (role) => {
   const normalizedRole = (role || '').toUpperCase();
@@ -140,6 +143,7 @@ function AppContent() {
           }
         />
         <Route path="/services" element={<Services />} />
+        <Route path="/support" element={<Support />} />
         <Route
           path="/dashboard"
           element={
@@ -169,6 +173,22 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <NotificationCreate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/support/review"
+          element={
+            <ProtectedRoute>
+              <ReviewSubmitPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/support/review-submitted"
+          element={
+            <ProtectedRoute>
+              <ReviewSubmittedPage />
             </ProtectedRoute>
           }
         />

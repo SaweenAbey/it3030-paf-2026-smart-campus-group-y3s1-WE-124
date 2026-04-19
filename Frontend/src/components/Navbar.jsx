@@ -24,7 +24,7 @@ const Navbar = () => {
     { label: 'All Resources', to: '/resources' },
     { label: 'Booking', to: '/bookings' },
     { label: 'Services', to: '/services' },
-    { label: 'Support', to: '/dashboard?tab=activity' },
+    { label: 'Support', to: '/support' },
   ];
 
   const isActive = (to) => {
