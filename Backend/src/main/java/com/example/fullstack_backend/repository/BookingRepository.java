@@ -16,6 +16,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByStatus(BookingStatus status);
 
+    List<Booking> findTop10ByUserIdOrderByCreatedAtDesc(String userId);
+
+    List<Booking> findTop10ByOrderByCreatedAtDesc();
+
     @Query(value = """
         SELECT * FROM bookings b
         WHERE b.resource_id = :resourceId

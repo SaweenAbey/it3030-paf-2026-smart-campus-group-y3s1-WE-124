@@ -22,6 +22,7 @@ import ResourcesCatalogue from './pages/resources/ResourcesCatalogue';
 import Support from './pages/Support';
 import ReviewSubmitPage from './pages/ReviewSubmitPage';
 import ReviewSubmittedPage from './pages/ReviewSubmittedPage';
+import ChatbotFloatingButton from './chatbot/ChatbotFloatingButton';
 
 const getDefaultRouteByRole = (role) => {
   const normalizedRole = (role || '').toUpperCase();
@@ -226,6 +227,7 @@ function AppContent() {
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      <ChatbotFloatingButton />
     </div>
   );
 }
