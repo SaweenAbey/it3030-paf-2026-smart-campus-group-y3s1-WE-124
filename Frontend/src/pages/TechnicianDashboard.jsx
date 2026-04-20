@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import TicketCenter from '../tickets/pages/TicketCenter';
 
 const TechnicianDashboard = () => {
   const { user } = useAuth();
@@ -37,75 +38,7 @@ const TechnicianDashboard = () => {
     if (activeTab === 'tickets') {
       return (
         <SectionCard title="Support Tickets" subtitle="Manage service requests and support tickets.">
-          <div className="space-y-3">
-            {[
-              {
-                id: 'TKT-001',
-                title: 'Lab Printer Not Working',
-                priority: 'High',
-                status: 'Open',
-                location: 'Lab A',
-              },
-              {
-                id: 'TKT-002',
-                title: 'Network Connection Issues',
-                priority: 'Medium',
-                status: 'In Progress',
-                location: 'Building C',
-              },
-              {
-                id: 'TKT-003',
-                title: 'Software License Renewal',
-                priority: 'Low',
-                status: 'Pending',
-                location: 'IT Office',
-              },
-              {
-                id: 'TKT-004',
-                title: 'Server Maintenance',
-                priority: 'High',
-                status: 'Scheduled',
-                location: 'Data Center',
-              },
-            ].map((ticket) => (
-              <div
-                key={ticket.id}
-                className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-all bg-gradient-to-r from-slate-50 to-white"
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-semibold text-slate-800">{ticket.title}</h4>
-                    <p className="text-sm text-slate-500 mt-1">Ticket: {ticket.id}</p>
-                    <p className="text-sm text-slate-500 mt-1">📍 {ticket.location}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span
-                      className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                        ticket.priority === 'High'
-                          ? 'bg-red-100 text-red-700'
-                          : ticket.priority === 'Medium'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-green-100 text-green-700'
-                      }`}
-                    >
-                      {ticket.priority}
-                    </span>
-                    <span
-                      className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                        ticket.status === 'Open'
-                          ? 'bg-blue-100 text-blue-700'
-                          : ticket.status === 'In Progress'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-orange-100 text-orange-700'
-                      }`}
-                    >
-                      {ticket.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <TicketCenter compact />
         </SectionCard>
       );
     }

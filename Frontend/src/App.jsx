@@ -23,6 +23,7 @@ import Support from './pages/Support';
 import ReviewSubmitPage from './pages/ReviewSubmitPage';
 import ReviewSubmittedPage from './pages/ReviewSubmittedPage';
 import ChatbotFloatingButton from './chatbot/ChatbotFloatingButton';
+import TicketCenter from './tickets/pages/TicketCenter';
 
 const getDefaultRouteByRole = (role) => {
   const normalizedRole = (role || '').toUpperCase();
@@ -190,6 +191,22 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <ReviewSubmittedPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tickets"
+          element={
+            <ProtectedRoute>
+              <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6">
+                <div className="mx-auto max-w-7xl">
+                  <div className="mb-6 rounded-3xl bg-gradient-to-r from-slate-900 to-slate-700 p-6 text-white shadow-2xl md:p-8">
+                    <h1 className="text-3xl font-bold md:text-4xl">Incident Ticket Center</h1>
+                    <p className="mt-2 text-sm text-slate-200">Track issue workflow: OPEN to IN_PROGRESS to RESOLVED to CLOSED</p>
+                  </div>
+                  <TicketCenter />
+                </div>
+              </div>
             </ProtectedRoute>
           }
         />
