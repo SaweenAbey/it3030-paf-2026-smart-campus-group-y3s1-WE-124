@@ -8,6 +8,7 @@ import com.example.fullstack_backend.dto.GoogleAuthRequest;
 import com.example.fullstack_backend.dto.LoginRequest;
 import com.example.fullstack_backend.dto.OtpVerificationRequest;
 import com.example.fullstack_backend.dto.RegisterRequest;
+import com.example.fullstack_backend.dto.UpdateUserRequest;
 import com.example.fullstack_backend.dto.UserResponse;
 import com.example.fullstack_backend.model.Role;
 import com.example.fullstack_backend.model.User;
@@ -36,7 +37,7 @@ public interface UserService {
 
     List<UserResponse> getActiveUsers();
 
-    UserResponse updateUser(Long id, RegisterRequest request);
+    UserResponse updateUser(Long id, UpdateUserRequest request);
 
     void deleteUser(Long id);
 

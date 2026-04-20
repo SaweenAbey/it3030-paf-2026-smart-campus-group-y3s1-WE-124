@@ -86,6 +86,23 @@ const AdminDashboard = () => {
     department: '',
     specialization: '',
   });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    username: '',
+    email: '',
+    role: 'STUDENT',
+    phoneNumber: '',
+    address: '',
+    age: '',
+    campusId: '',
+    department: '',
+    specialization: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   const [adminNotifications, setAdminNotifications] = useState([]);
   const [notifLoading, setNotifLoading] = useState(false);
@@ -233,6 +250,93 @@ const AdminDashboard = () => {
       toast.error(error.response?.data?.message || 'Failed to update status');
     } finally {
       setStatusToggleId(null);
+    }
+  };
+
+  const openEditUserModal = (targetUser) => {
+    if (!targetUser?.id) return;
+    setEditingUserId(targetUser.id);
+    setEditFormData({
+      name: targetUser.name || '',
+      username: targetUser.username || '',
+      email: targetUser.email || '',
+      role: targetUser.role || 'STUDENT',
+      phoneNumber: targetUser.phoneNumber || '',
+      address: targetUser.address || '',
+      age: targetUser.age ?? '',
+      campusId: targetUser.campusId || '',
+      department: targetUser.department || '',
+      specialization: targetUser.specialization || '',
+      password: '',
+      confirmPassword: '',
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditUserModal = () => {
+    setIsEditModalOpen(false);
+    setEditingUserId(null);
+    setEditFormData({
+      name: '',
+      username: '',
+      email: '',
+      role: 'STUDENT',
+      phoneNumber: '',
+      address: '',
+      age: '',
+      campusId: '',
+      department: '',
+      specialization: '',
+      password: '',
+      confirmPassword: '',
+    });
+  };
+
+  const handleEditUserChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdateUserProfile = async (e) => {
+    e.preventDefault();
+    if (!editingUserId) return;
+
+    if (!editFormData.name || !editFormData.username || !editFormData.email) {
+      toast.error('Name, username and email are required');
+      return;
+    }
+
+    if (editFormData.password && editFormData.password !== editFormData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    const payload = {
+      name: editFormData.name.trim(),
+      username: editFormData.username.trim(),
+      email: editFormData.email.trim(),
+      role: editFormData.role,
+      phoneNumber: editFormData.phoneNumber.trim() || null,
+      address: editFormData.address.trim() || null,
+      age: editFormData.age === '' ? null : Number(editFormData.age),
+      campusId: editFormData.campusId.trim() || null,
+      department: editFormData.department.trim() || null,
+      specialization: editFormData.specialization.trim() || null,
+      password: editFormData.password ? editFormData.password : null,
+      confirmPassword: editFormData.password ? editFormData.confirmPassword : null,
+    };
+
+    setEditSubmitting(true);
+    try {
+      const response = await userAPI.updateProfile(editingUserId, payload);
+      const updated = response.data;
+      setUsers((prev) => prev.map((u) => (u.id === editingUserId ? { ...u, ...updated } : u)));
+      toast.success('User profile updated successfully');
+      closeEditUserModal();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update user profile');
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -559,7 +663,7 @@ const AdminDashboard = () => {
                                 <th className="px-4 py-3 text-left font-semibold text-slate-700">Email</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-700">Role</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
-                                <th className="px-4 py-3 text-right font-semibold text-slate-700">Status control</th>
+                                <th className="px-4 py-3 text-right font-semibold text-slate-700">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200 bg-white">
@@ -583,12 +687,21 @@ const AdminDashboard = () => {
                                     </span>
                                   </td>
                                   <td className="px-4 py-3 text-right">
-                                    <AdminSkyStatusButton
-                                      active={Boolean(u.isActive)}
-                                      disabled={user?.id === u.id}
-                                      busy={statusToggleId === u.id}
-                                      onToggle={() => handleToggleUserActive(u)}
-                                    />
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => openEditUserModal(u)}
+                                        className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-800 transition hover:bg-sky-100"
+                                      >
+                                        Edit
+                                      </button>
+                                      <AdminSkyStatusButton
+                                        active={Boolean(u.isActive)}
+                                        disabled={user?.id === u.id}
+                                        busy={statusToggleId === u.id}
+                                        onToggle={() => handleToggleUserActive(u)}
+                                      />
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
@@ -752,6 +865,168 @@ const AdminDashboard = () => {
                     </form>
                   )}
                 </div>
+
+                {isEditModalOpen && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+                    <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                      <div className="border-b border-slate-200 p-6">
+                        <h3 className="text-xl font-semibold text-slate-900">Edit User Profile</h3>
+                        <p className="mt-1 text-sm text-slate-500">Update account details for this user.</p>
+                      </div>
+
+                      <form onSubmit={handleUpdateUserProfile} className="space-y-5 p-6">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Full Name *</label>
+                            <input
+                              type="text"
+                              name="name"
+                              value={editFormData.name}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Username *</label>
+                            <input
+                              type="text"
+                              name="username"
+                              value={editFormData.username}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Email *</label>
+                            <input
+                              type="email"
+                              name="email"
+                              value={editFormData.email}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Role *</label>
+                            <select
+                              name="role"
+                              value={editFormData.role}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            >
+                              <option value="STUDENT">Student</option>
+                              <option value="TEACHER">Tutor</option>
+                              <option value="TECHNICIAN">Technician</option>
+                              <option value="MANAGER">Manager</option>
+                              <option value="ADMIN">Admin</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Phone Number</label>
+                            <input
+                              type="tel"
+                              name="phoneNumber"
+                              value={editFormData.phoneNumber}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Campus ID</label>
+                            <input
+                              type="text"
+                              name="campusId"
+                              value={editFormData.campusId}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Department</label>
+                            <input
+                              type="text"
+                              name="department"
+                              value={editFormData.department}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Specialization</label>
+                            <input
+                              type="text"
+                              name="specialization"
+                              value={editFormData.specialization}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Age</label>
+                            <input
+                              type="number"
+                              name="age"
+                              min="1"
+                              max="150"
+                              value={editFormData.age}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Address</label>
+                            <input
+                              type="text"
+                              name="address"
+                              value={editFormData.address}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">New Password (optional)</label>
+                            <input
+                              type="password"
+                              name="password"
+                              value={editFormData.password}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                              placeholder="Leave blank to keep current password"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">Confirm Password</label>
+                            <input
+                              type="password"
+                              name="confirmPassword"
+                              value={editFormData.confirmPassword}
+                              onChange={handleEditUserChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={closeEditUserModal}
+                            disabled={editSubmitting}
+                            className="rounded-xl border border-slate-300 px-6 py-2.5 text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={editSubmitting}
+                            className="rounded-xl bg-linear-to-r from-sky-600 to-sky-500 px-6 py-2.5 font-semibold text-white shadow-md shadow-sky-200/40 transition hover:from-sky-700 hover:to-sky-600 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {editSubmitting ? 'Saving...' : 'Save Changes'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
