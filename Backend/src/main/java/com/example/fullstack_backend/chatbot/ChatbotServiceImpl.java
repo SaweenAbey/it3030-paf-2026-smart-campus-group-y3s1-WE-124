@@ -55,7 +55,7 @@ public class ChatbotServiceImpl implements ChatbotService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
 
-    @Value("${gemini.api.key:}")
+    @Value("${gemini.api.key:AIzaSyD0eX_JMTqbW48P5THylJdMgvVjckwQXOI}")
     private String geminiApiKey;
 
     @Value("${gemini.model:gemini-1.5-flash}")
