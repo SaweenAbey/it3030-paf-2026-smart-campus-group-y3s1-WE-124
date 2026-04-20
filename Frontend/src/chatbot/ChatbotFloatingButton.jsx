@@ -25,6 +25,10 @@ const ChatbotFloatingButton = () => {
 
   useEffect(() => {
     const loadHelp = async () => {
+      if (!isAuthenticated()) {
+        return;
+      }
+
       try {
         const response = await chatbotAPI.getHelp();
         if (Array.isArray(response.data?.suggestions)) {
@@ -36,7 +40,7 @@ const ChatbotFloatingButton = () => {
     };
 
     loadHelp();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!listRef.current) return;
