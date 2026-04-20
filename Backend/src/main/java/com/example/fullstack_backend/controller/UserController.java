@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.fullstack_backend.dto.AuthResponse;
 import com.example.fullstack_backend.dto.RegisterRequest;
+import com.example.fullstack_backend.dto.UpdateUserRequest;
 import com.example.fullstack_backend.dto.UserResponse;
 import com.example.fullstack_backend.model.Role;
 import com.example.fullstack_backend.service.UserService;
@@ -129,7 +130,7 @@ public class UserController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or @userSecurity.isOwner(authentication, #id)")
     public ResponseEntity<UserResponse> updateUser(@PathVariable Long id,
-                                                    @Valid @RequestBody RegisterRequest request) {
+                                                    @Valid @RequestBody UpdateUserRequest request) {
         logger.info("Updating user with id: {}", id);
         return ResponseEntity.ok(userService.updateUser(id, request));
     }

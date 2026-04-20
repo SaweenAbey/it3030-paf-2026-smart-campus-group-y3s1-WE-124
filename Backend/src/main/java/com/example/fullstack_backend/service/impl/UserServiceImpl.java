@@ -23,6 +23,7 @@ import com.example.fullstack_backend.dto.GoogleAuthRequest;
 import com.example.fullstack_backend.dto.LoginRequest;
 import com.example.fullstack_backend.dto.OtpVerificationRequest;
 import com.example.fullstack_backend.dto.RegisterRequest;
+import com.example.fullstack_backend.dto.UpdateUserRequest;
 import com.example.fullstack_backend.dto.UserResponse;
 import com.example.fullstack_backend.exception.ResourceNotFoundException;
 import com.example.fullstack_backend.exception.UserAlreadyExistsException;
@@ -486,7 +487,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse updateUser(Long id, RegisterRequest request) {
+    public UserResponse updateUser(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
