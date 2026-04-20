@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '../context/AuthContext';
 import { chatbotAPI } from '../services/api';
 
 const nowLabel = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 const ChatbotPage = () => {
+  const { isAuthenticated } = useAuth();
   const [messages, setMessages] = useState([
     {
       role: 'bot',
@@ -18,6 +20,10 @@ const ChatbotPage = () => {
 
   useEffect(() => {
     const loadHelp = async () => {
+      if (!isAuthenticated()) {
+        return;
+      }
+
       try {
         const response = await chatbotAPI.getHelp();
         const nextSuggestions = response.data?.suggestions;
@@ -30,7 +36,7 @@ const ChatbotPage = () => {
     };
 
     loadHelp();
-  }, []);
+  }, [isAuthenticated]);
 
   const canSend = useMemo(() => question.trim().length > 0 && !loading, [question, loading]);
 

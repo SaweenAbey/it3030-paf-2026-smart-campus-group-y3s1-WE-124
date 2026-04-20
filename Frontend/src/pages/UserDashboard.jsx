@@ -1,533 +1,374 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  BarChart3,
+  CalendarCheck2,
+  CirclePlus,
+  LogOut,
+  Tickets,
+  UserRound,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import Sidebar from '../components/Sidebar';
 import { getMyBookings, cancelBooking } from '../api/bookingApi';
+import TicketCenter from '../tickets/pages/TicketCenter';
+
+const TABS = [
+  { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { key: 'bookings', label: 'My Bookings', icon: CalendarCheck2 },
+  { key: 'raise-ticket', label: 'Raise Tickets', icon: CirclePlus },
+  { key: 'my-tickets', label: 'My Tickets', icon: Tickets },
+  { key: 'profile', label: 'Profile', icon: UserRound },
+];
 
 const UserDashboard = () => {
-  const { user } = useAuth();
-  const [searchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'profile';
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
-  const [bookingError, setBookingError] = useState(null);
+  const [bookingError, setBookingError] = useState('');
 
-  // Fetch user bookings
+  const bookingStats = useMemo(() => {
+    const total = bookings.length;
+    const approved = bookings.filter((item) => item.status === 'APPROVED').length;
+    const pending = bookings.filter((item) => item.status === 'PENDING').length;
+    const rejected = bookings.filter((item) => item.status === 'REJECTED').length;
+    const cancelled = bookings.filter((item) => item.status === 'CANCELLED').length;
+    return { total, approved, pending, rejected, cancelled };
+  }, [bookings]);
+
   useEffect(() => {
-    if (activeTab === 'bookings') {
-      fetchBookings();
+    if (activeTab === 'dashboard' || activeTab === 'bookings') {
+      loadBookings();
     }
   }, [activeTab]);
 
-  const fetchBookings = async () => {
+  const loadBookings = async () => {
     setLoadingBookings(true);
-    setBookingError(null);
+    setBookingError('');
     try {
       const response = await getMyBookings();
       setBookings(response.data || []);
     } catch (error) {
       setBookingError('Failed to load bookings. Please try again.');
-      console.error('Error fetching bookings:', error);
     } finally {
       setLoadingBookings(false);
     }
   };
 
-  const handleCancelBooking = async (bookingId) => {
-    if (confirm('Are you sure you want to cancel this booking?')) {
-      try {
-        await cancelBooking(bookingId);
-        setBookings(bookings.filter(b => b.id !== bookingId));
-        alert('Booking cancelled successfully');
-      } catch (error) {
-        alert('Failed to cancel booking. Please try again.');
-        console.error('Error cancelling booking:', error);
-      }
+  const onCancelBooking = async (bookingId) => {
+    if (!window.confirm('Are you sure you want to cancel this booking?')) return;
+    try {
+      await cancelBooking(bookingId);
+      setBookings((prev) => prev.filter((item) => item.id !== bookingId));
+    } catch (error) {
+      window.alert('Failed to cancel booking. Please try again.');
     }
   };
 
-  const formatDateTime = (datetime) => {
-    if (!datetime) return 'N/A';
-    return new Date(datetime).toLocaleString('en-US', {
+  const onLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return 'N/A';
+    return new Date(value).toLocaleString('en-US', {
       dateStyle: 'medium',
-      timeStyle: 'short'
+      timeStyle: 'short',
     });
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      'PENDING': 'bg-yellow-100 text-yellow-700',
-      'APPROVED': 'bg-green-100 text-green-700',
-      'REJECTED': 'bg-red-100 text-red-700',
-      'CANCELLED': 'bg-gray-100 text-gray-700'
-    };
-    return colors[status] || 'bg-blue-100 text-blue-700';
+  const renderDashboard = () => {
+    const safeTotal = Math.max(bookingStats.total, 1);
+    const chartData = [
+      {
+        name: 'Approved',
+        count: bookingStats.approved,
+        percent: Math.round((bookingStats.approved / safeTotal) * 100),
+        color: 'bg-emerald-500',
+      },
+      {
+        name: 'Pending',
+        count: bookingStats.pending,
+        percent: Math.round((bookingStats.pending / safeTotal) * 100),
+        color: 'bg-amber-500',
+      },
+      {
+        name: 'Rejected',
+        count: bookingStats.rejected,
+        percent: Math.round((bookingStats.rejected / safeTotal) * 100),
+        color: 'bg-rose-500',
+      },
+      {
+        name: 'Cancelled',
+        count: bookingStats.cancelled,
+        percent: Math.round((bookingStats.cancelled / safeTotal) * 100),
+        color: 'bg-slate-500',
+      },
+    ];
+
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Dashboard Analytics</h2>
+          <p className="text-slate-500">Overview of your booking activity and trends.</p>
+        </div>
+
+        {loadingBookings && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
+            Loading analytics...
+          </div>
+        )}
+
+        {!loadingBookings && bookingError && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{bookingError}</div>
+        )}
+
+        {!loadingBookings && !bookingError && (
+          <>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <p className="text-sm text-slate-500">Total Bookings</p>
+                <p className="mt-2 text-3xl font-bold text-slate-800">{bookingStats.total}</p>
+              </div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
+                <p className="text-sm text-emerald-700">Approved</p>
+                <p className="mt-2 text-3xl font-bold text-emerald-800">{bookingStats.approved}</p>
+              </div>
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
+                <p className="text-sm text-amber-700">Pending</p>
+                <p className="mt-2 text-3xl font-bold text-amber-800">{bookingStats.pending}</p>
+              </div>
+              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
+                <p className="text-sm text-rose-700">Rejected</p>
+                <p className="mt-2 text-3xl font-bold text-rose-800">{bookingStats.rejected}</p>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-800">Booking Status Graph</h3>
+                <div className="mt-5 space-y-4">
+                  {chartData.map((item) => (
+                    <div key={item.name}>
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="text-slate-700">{item.name}</span>
+                        <span className="font-semibold text-slate-700">{item.count} ({item.percent}%)</span>
+                      </div>
+                      <div className="h-3 w-full rounded-full bg-slate-100">
+                        <div
+                          className={`h-3 rounded-full ${item.color}`}
+                          style={{ width: `${item.percent || 2}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-slate-800">Recent Booking Details</h3>
+                <div className="mt-4 space-y-3">
+                  {bookings.slice(0, 5).map((booking) => (
+                    <div key={booking.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-800">Booking #{booking.id}</p>
+                        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">
+                          {booking.status}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {formatDateTime(booking.startTime)} to {formatDateTime(booking.endTime)}
+                      </p>
+                    </div>
+                  ))}
+                  {bookings.length === 0 && (
+                    <p className="text-sm text-slate-500">No booking records available yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
   };
 
-  const sidebarItems = [
-    { key: 'profile', label: 'My Profile', icon: '👤' },
-    { key: 'overview', label: 'Overview', icon: '📚' },
-    { key: 'courses', label: 'My Courses', icon: '🎓' },
-    { key: 'bookings', label: 'My Bookings', icon: '📅' },
-    { key: 'assignments', label: 'Assignments', icon: '📝' },
-    { key: 'grades', label: 'Grades', icon: '📊' },
-    { key: 'schedule', label: 'Schedule', icon: '📌' },
-    { key: 'resources', label: 'Resources', icon: '📖' },
-    { key: 'messages', label: 'Messages', icon: '💬' },
-  ];
+  const renderBookings = () => (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">My Bookings</h2>
+          <p className="text-slate-500">Manage your booked resources.</p>
+        </div>
+        <button
+          onClick={() => navigate('/bookings')}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          New Booking
+        </button>
+      </div>
 
-  const stats = [
-    { label: 'Enrolled Courses', value: '5', icon: '🎓' },
-    { label: 'Active Assignments', value: '3', icon: '📝' },
-    { label: 'Avg. GPA', value: '3.8', icon: '⭐' },
-    { label: 'Attendance', value: '94%', icon: '✓' },
-  ];
+      {loadingBookings && <p className="text-slate-600">Loading your bookings...</p>}
+      {!loadingBookings && bookingError && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{bookingError}</div>
+      )}
 
-  const SectionCard = ({ title, subtitle, children }) => (
-    <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-sm">
-      <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
-      {subtitle && <p className="text-slate-400 mt-1">{subtitle}</p>}
-      <div className="mt-6">{children}</div>
+      {!loadingBookings && !bookingError && bookings.length === 0 && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-600">
+          No bookings yet.
+        </div>
+      )}
+
+      {!loadingBookings && !bookingError && bookings.length > 0 && (
+        <div className="space-y-4">
+          {bookings.map((booking) => (
+            <div key={booking.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-lg font-bold text-slate-800">Booking #{booking.id}</h3>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                  {booking.status}
+                </span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold">Start:</span> {formatDateTime(booking.startTime)}
+                </p>
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold">End:</span> {formatDateTime(booking.endTime)}
+                </p>
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold">Purpose:</span> {booking.purpose || 'N/A'}
+                </p>
+                <p className="text-sm text-slate-700">
+                  <span className="font-semibold">Attendees:</span> {booking.expectedAttendees || 'N/A'}
+                </p>
+              </div>
+              {booking.status === 'PENDING' && (
+                <button
+                  onClick={() => onCancelBooking(booking.id)}
+                  className="mt-4 rounded-lg bg-rose-100 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-200"
+                >
+                  Cancel Booking
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderRaiseTickets = () => (
+    <div>
+      <h2 className="text-2xl font-bold text-slate-800">Raise Tickets</h2>
+      <p className="mb-5 text-slate-500">Create a new support request for campus services.</p>
+      <TicketCenter compact />
+    </div>
+  );
+
+  const renderMyTickets = () => (
+    <div>
+      <h2 className="text-2xl font-bold text-slate-800">My Tickets</h2>
+      <p className="mb-5 text-slate-500">Track status and updates on your existing tickets.</p>
+      <TicketCenter compact />
+    </div>
+  );
+
+  const renderProfile = () => (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-800">Profile</h2>
+        <p className="text-slate-500">Your account details.</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Full Name</p>
+          <p className="mt-1 font-semibold text-slate-800">{user?.name || 'Not provided'}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Username</p>
+          <p className="mt-1 font-semibold text-slate-800">{user?.username || 'Not provided'}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Email</p>
+          <p className="mt-1 font-semibold text-slate-800">{user?.email || 'Not provided'}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-xs uppercase tracking-wide text-slate-500">Role</p>
+          <p className="mt-1 font-semibold text-slate-800">{user?.role || 'STUDENT'}</p>
+        </div>
+      </div>
     </div>
   );
 
   const renderContent = () => {
-    if (activeTab === 'profile') {
-      return (
-        <SectionCard title="My Profile" subtitle="Your account information and student details.">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Full Name</p>
-              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.name || 'Not provided'}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Username</p>
-              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.username || 'Not provided'}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Email</p>
-              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.email || 'Not provided'}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Role</p>
-              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.role || 'STUDENT'}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Department</p>
-              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.department || 'Not provided'}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Campus ID</p>
-              <p className="mt-1 text-lg font-semibold text-slate-800">{user?.campusId || 'Not provided'}</p>
-            </div>
-          </div>
-        </SectionCard>
-      );
-    }
-
-    if (activeTab === 'courses') {
-      return (
-        <SectionCard title="My Courses" subtitle="View all your enrolled courses.">
-          <div className="grid md:grid-cols-2 gap-4">
-            {[
-              {
-                name: 'Computer Science 101',
-                instructor: 'Dr. Smith',
-                progress: 75,
-                grade: 'A-',
-              },
-              {
-                name: 'Data Structures',
-                instructor: 'Dr. Johnson',
-                progress: 60,
-                grade: 'B+',
-              },
-              { name: 'Web Development', instructor: 'Prof. Davis', progress: 85, grade: 'A' },
-              {
-                name: 'Database Systems',
-                instructor: 'Dr. Wilson',
-                progress: 50,
-                grade: 'B',
-              },
-            ].map((course) => (
-              <div
-                key={course.name}
-                className="rounded-2xl border border-slate-200 p-5 hover:shadow-lg hover:bg-gradient-to-br hover:from-sky-50 hover:to-blue-50 transition-all cursor-pointer"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-semibold text-slate-800">{course.name}</h3>
-                  <span className="text-sm font-bold text-blue-600">{course.grade}</span>
-                </div>
-                <p className="text-sm text-slate-600 mb-3">👨‍🏫 {course.instructor}</p>
-                <div className="w-full bg-slate-200 rounded-full h-2">
-                  <div
-                    className="bg-blue-500 h-2 rounded-full"
-                    style={{ width: `${course.progress}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-slate-500 mt-2">{course.progress}% Complete</p>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      );
-    }
-
-    if (activeTab === 'bookings') {
-      return (
-        <SectionCard title="My Bookings" subtitle="View and manage your resource bookings.">
-          {loadingBookings ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-                <p className="text-slate-600">Loading your bookings...</p>
-              </div>
-            </div>
-          ) : bookingError ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-              <p className="text-red-700">❌ {bookingError}</p>
-            </div>
-          ) : bookings.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-              <p className="text-slate-600 text-lg">No bookings yet</p>
-              <p className="text-slate-500 text-sm mt-2">Create a booking to reserve a resource</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {bookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="rounded-2xl border border-slate-200 p-5 hover:shadow-lg transition-all bg-gradient-to-r from-slate-50 to-white"
-                >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-bold text-slate-800">
-                          📒 {booking.resourceId || 'Resource'}
-                        </h3>
-                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${getStatusColor(booking.status)}`}>
-                          {booking.status}
-                        </span>
-                      </div>
-                      <p className="text-sm text-slate-500">Booking ID: #{booking.id}</p>
-                    </div>
-                  </div>
-
-                  {/* Booking Period */}
-                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl p-4 mb-4 border border-blue-100">
-                    <p className="text-xs uppercase tracking-wide text-slate-600 font-semibold mb-2 flex items-center gap-2">
-                      📅 Booking Period
-                    </p>
-                    <p className="text-slate-800 font-medium">
-                      {formatDateTime(booking.startTime)} → {formatDateTime(booking.endTime)}
-                    </p>
-                  </div>
-
-                  {/* Details Grid */}
-                  <div className="grid md:grid-cols-2 gap-4 mb-4">
-                    <div className="rounded-lg bg-slate-50 p-3">
-                      <p className="text-xs text-slate-600 uppercase tracking-wide font-semibold">Purpose</p>
-                      <p className="text-slate-800 font-medium mt-1">{booking.purpose || 'N/A'}</p>
-                    </div>
-                    <div className="rounded-lg bg-slate-50 p-3">
-                      <p className="text-xs text-slate-600 uppercase tracking-wide font-semibold">👥 Expected Attendees</p>
-                      <p className="text-slate-800 font-medium mt-1">{booking.expectedAttendees || 'Not specified'}</p>
-                    </div>
-                  </div>
-
-                  {/* Rejection Reason */}
-                  {booking.rejectionReason && (
-                    <div className="rounded-lg bg-red-50 border border-red-200 p-3 mb-4">
-                      <p className="text-red-700 text-sm">
-                        <strong>❌ Rejection Reason:</strong> {booking.rejectionReason}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Timestamps */}
-                  <div className="text-xs text-slate-500 flex gap-6 flex-wrap mb-4 pt-3 border-t border-slate-200">
-                    <span>🕐 Created: {formatDateTime(booking.createdAt)}</span>
-                    <span>🔄 Updated: {formatDateTime(booking.updatedAt)}</span>
-                  </div>
-
-                  {/* Actions */}
-                  {booking.status === 'PENDING' && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleCancelBooking(booking.id)}
-                        className="flex-1 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg transition-colors"
-                      >
-                        🚫 Cancel Booking
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-      );
-    }
-
-    if (activeTab === 'assignments') {
-      return (
-        <SectionCard title="My Assignments" subtitle="Track your current assignments and deadlines.">
-          <div className="space-y-3">
-            {[
-              {
-                title: 'Programming Project 1',
-                course: 'CS 101',
-                dueDate: 'Apr 15, 2026',
-                status: 'In Progress',
-              },
-              {
-                title: 'Database Design',
-                course: 'Database Systems',
-                dueDate: 'Apr 20, 2026',
-                status: 'Not Started',
-              },
-              {
-                title: 'Web App Development',
-                course: 'Web Development',
-                dueDate: 'Apr 10, 2026',
-                status: 'Submitted',
-              },
-              {
-                title: 'Data Structures HW',
-                course: 'Data Structures',
-                dueDate: 'Apr 22, 2026',
-                status: 'In Progress',
-              },
-            ].map((assign) => (
-              <div key={assign.title} className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-all bg-gradient-to-r from-slate-50 to-white">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-semibold text-slate-800">{assign.title}</h4>
-                  <span
-                    className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                      assign.status === 'Submitted'
-                        ? 'bg-green-100 text-green-700'
-                        : assign.status === 'In Progress'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-orange-100 text-orange-700'
-                    }`}
-                  >
-                    {assign.status}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-600 mb-2">{assign.course}</p>
-                <p className="text-sm font-medium text-slate-700">📅 Due: {assign.dueDate}</p>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      );
-    }
-
-    if (activeTab === 'grades') {
-      return (
-        <SectionCard title="My Grades" subtitle="View your grades and performance metrics.">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left p-3 font-semibold text-slate-700">Course</th>
-                  <th className="text-left p-3 font-semibold text-slate-700">Current Grade</th>
-                  <th className="text-left p-3 font-semibold text-slate-700">Participation</th>
-                  <th className="text-left p-3 font-semibold text-slate-700">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { course: 'CS 101', grade: 'A-', participation: 'Excellent', status: '✓ On Track' },
-                  { course: 'Database Systems', grade: 'B', participation: 'Good', status: '✓ On Track' },
-                  { course: 'Web Development', grade: 'A', participation: 'Excellent', status: '✓ Excellent' },
-                  { course: 'Data Structures', grade: 'B+', participation: 'Good', status: '✓ On Track' },
-                ].map((student) => (
-                  <tr key={student.course} className="border-b border-slate-100 hover:bg-slate-50 transition">
-                    <td className="p-3 text-slate-700 font-medium">{student.course}</td>
-                    <td className="p-3 font-semibold text-slate-800 text-lg">{student.grade}</td>
-                    <td className="p-3 text-slate-700">{student.participation}</td>
-                    <td className="p-3 text-green-600 font-semibold">{student.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </SectionCard>
-      );
-    }
-
-    if (activeTab === 'schedule') {
-      return (
-        <SectionCard title="Class Schedule" subtitle="Your weekly class schedule and important dates.">
-          <div className="space-y-3">
-            {[
-              { day: 'Monday', classes: ['CS 101 - 10:00 AM', 'Web Dev - 1:00 PM'] },
-              { day: 'Tuesday', classes: ['Database - 2:00 PM'] },
-              { day: 'Wednesday', classes: ['CS 101 - 10:00 AM', 'Data Structures - 11:30 AM'] },
-              { day: 'Thursday', classes: ['Database - 2:00 PM', 'Web Dev - 4:00 PM'] },
-              { day: 'Friday', classes: ['CS 101 - 10:00 AM', 'Lab Session - 2:00 PM'] },
-            ].map((day) => (
-              <div key={day.day} className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50 transition bg-gradient-to-r from-slate-50 to-white">
-                <h4 className="font-semibold text-slate-800 mb-2">{day.day}</h4>
-                <div className="space-y-1">
-                  {day.classes.map((cls, idx) => (
-                    <p key={idx} className="text-sm text-slate-600">🕐 {cls}</p>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      );
-    }
-
-    if (activeTab === 'resources') {
-      return (
-        <SectionCard title="Course Resources" subtitle="Access lecture notes, materials, and study guides.">
-          <div className="space-y-3">
-            {[
-              {
-                name: 'Lecture Notes - Week 1-5',
-                course: 'CS 101',
-                type: 'PDF',
-                size: '12 MB',
-              },
-              { name: 'Practice Problems', course: 'Data Structures', type: 'Document', size: '2.1 MB' },
-              { name: 'Code Examples & Tutorials', course: 'Web Development', type: 'ZIP', size: '45 MB' },
-              { name: 'Database Design Guide', course: 'Database Systems', type: 'PDF', size: '5.3 MB' },
-            ].map((resource) => (
-              <div
-                key={resource.name}
-                className="rounded-xl border border-slate-200 p-4 flex justify-between items-center hover:bg-slate-50 transition cursor-pointer"
-              >
-                <div>
-                  <p className="font-semibold text-slate-800">{resource.name}</p>
-                  <p className="text-sm text-slate-500">{resource.course}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500">{resource.size}</span>
-                  <span className="text-xs font-semibold bg-sky-100 text-sky-700 px-3 py-1 rounded-full">
-                    {resource.type}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      );
-    }
-
-    if (activeTab === 'messages') {
-      return (
-        <SectionCard
-          title="Messages & Announcements"
-          subtitle="Communication with instructors and classmates."
-        >
-          <div className="space-y-3">
-            {[
-              {
-                from: 'Dr. Smith',
-                type: 'Announcement',
-                message: 'Class cancelled tomorrow due to conference',
-                time: '2 hours ago',
-              },
-              {
-                from: 'Prof. Davis',
-                type: 'Message',
-                message: 'Your project was graded. Check the feedback.',
-                time: '5 hours ago',
-              },
-              {
-                from: 'Classmate - Alex',
-                type: 'Message',
-                message: 'Want to study together for the exam?',
-                time: '1 day ago',
-              },
-            ].map((msg, idx) => (
-              <div key={idx} className="rounded-xl border border-slate-200 p-4 hover:bg-slate-50 transition cursor-pointer bg-gradient-to-r from-slate-50 to-white">
-                <div className="flex justify-between items-start mb-2">
-                  <p className="font-semibold text-slate-800">{msg.from}</p>
-                  <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                    {msg.type}
-                  </span>
-                </div>
-                <p className="text-slate-600">{msg.message}</p>
-                <p className="text-xs text-slate-400 mt-2">{msg.time}</p>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      );
-    }
-
-    return (
-      <SectionCard title="Overview" subtitle="Your learning space dashboard.">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-gradient-to-br from-sky-50 to-blue-50 rounded-2xl border border-sky-100 p-6 hover:shadow-lg transition-all"
-            >
-              <div className="text-3xl mb-2">{stat.icon}</div>
-              <p className="text-slate-400 text-sm">{stat.label}</p>
-              <p className="text-3xl font-bold text-slate-800 mt-2">{stat.value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="rounded-2xl border border-sky-100 p-6 bg-gradient-to-br from-sky-50 to-blue-50">
-            <h3 className="font-semibold text-slate-800 mb-4">📌 Upcoming Deadlines</h3>
-            <div className="space-y-3">
-              {[
-                '📝 CS 101 Project - Apr 15',
-                '📝 Database Assignment - Apr 20',
-                '📝 Web Dev HW - Apr 22',
-              ].map((deadline, idx) => (
-                <p key={idx} className="text-slate-700 text-sm">
-                  {deadline}
-                </p>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-sky-100 p-6 bg-gradient-to-br from-blue-50 to-cyan-50">
-            <h3 className="font-semibold text-slate-800 mb-4">⚡ Quick Actions</h3>
-            <div className="space-y-2">
-              <button className="w-full px-4 py-2 bg-sky-100 text-sky-700 rounded-lg hover:bg-sky-200 font-medium transition">
-                View Messages
-              </button>
-              <button className="w-full px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 font-medium transition">
-                Download Resources
-              </button>
-              <button className="w-full px-4 py-2 bg-cyan-100 text-cyan-700 rounded-lg hover:bg-cyan-200 font-medium transition">
-                Check Grades
-              </button>
-            </div>
-          </div>
-        </div>
-      </SectionCard>
-    );
+    if (activeTab === 'dashboard') return renderDashboard();
+    if (activeTab === 'bookings') return renderBookings();
+    if (activeTab === 'raise-ticket') return renderRaiseTickets();
+    if (activeTab === 'my-tickets') return renderMyTickets();
+    return renderProfile();
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 sm:px-6 py-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="rounded-3xl bg-gradient-to-r from-sky-700 to-blue-500 p-6 md:p-8 text-white shadow-2xl mb-6">
-          <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs tracking-wider uppercase mb-4">
-            📚 Learning Space
+    <div className="min-h-screen bg-slate-100">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">UNI360</p>
+            <h1 className="text-3xl font-bold text-slate-900">User Dashboard</h1>
+            <p className="text-sm text-slate-500">Welcome back, {user?.name || 'User'}.</p>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Student Dashboard</h1>
-          <p className="text-white/90 text-base md:text-lg">Welcome back, {user?.name || 'Student'}.</p>
-          <p className="text-white/75 text-sm mt-2">Stay on top of your courses and assignments</p>
+          <button
+            onClick={onLogout}
+            className="hidden items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 lg:inline-flex"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
+      </header>
 
-        <div className="grid lg:grid-cols-[280px_1fr] gap-6">
-          <Sidebar items={sidebarItems} />
-          <main>{renderContent()}</main>
+      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+          <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-6 lg:h-fit">
+            <nav className="space-y-2">
+              {TABS.map((tab) => {
+                const selected = activeTab === tab.key;
+                const TabIcon = tab.icon;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                      selected
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <TabIcon size={18} strokeWidth={2.2} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            <button
+              onClick={onLogout}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-700 lg:hidden"
+            >
+              <LogOut size={16} />
+              Logout
+            </button>
+          </aside>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
+            {renderContent()}
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
