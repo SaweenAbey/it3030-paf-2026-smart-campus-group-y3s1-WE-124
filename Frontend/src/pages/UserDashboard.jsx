@@ -26,7 +26,7 @@ import uni360Logo from '../assets/logo.png';
 const TABS = [
   { key: 'dashboard', label: 'Overview', icon: LayoutGrid },
   { key: 'bookings', label: 'My Bookings', icon: CalendarCheck2 },
-  { key: 'my-tickets', label: 'My Tickets', icon: Tickets },
+  { key: 'incidents', label: 'Incidents', icon: Tickets },
   { key: 'profile', label: 'Profile', icon: UserRound },
   { key: 'settings', label: 'Settings', icon: Cog },
 ];
@@ -58,7 +58,8 @@ const UserDashboard = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    const queryTab = new URLSearchParams(location.search).get('tab');
+    const queryTabRaw = new URLSearchParams(location.search).get('tab');
+    const queryTab = queryTabRaw === 'my-tickets' ? 'incidents' : queryTabRaw;
     const validTab = TABS.some((item) => item.key === queryTab);
     if (validTab && queryTab !== activeTab) {
       setActiveTab(queryTab);
@@ -287,11 +288,11 @@ const UserDashboard = () => {
     </div>
   );
 
-  const renderMyTickets = () => (
+  const renderIncidents = () => (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800">My Tickets</h2>
-        <p className="mb-2 text-slate-500">Track existing issues and raise new support tickets.</p>
+        <h2 className="text-2xl font-bold text-slate-800">Incident Tickets</h2>
+        <p className="mb-2 text-slate-500">Raise incident reports and track admin review and technician assignment.</p>
       </div>
       <TicketCenter compact />
     </div>
@@ -419,7 +420,7 @@ const UserDashboard = () => {
   const renderContent = () => {
     if (activeTab === 'dashboard') return renderDashboard();
     if (activeTab === 'bookings') return renderBookings();
-    if (activeTab === 'my-tickets') return renderMyTickets();
+    if (activeTab === 'incidents') return renderIncidents();
     if (activeTab === 'settings') return renderSettings();
     return renderProfile();
   };

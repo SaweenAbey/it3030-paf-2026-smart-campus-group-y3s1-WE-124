@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import mediaUpload from '../../utils/mediaUpload';
 import ticketApi from '../api/ticketApi';
+import api from '../../services/api';
 
 const TicketCreateForm = ({ onCreated }) => {
   const [title, setTitle] = useState('');
@@ -11,6 +12,44 @@ const TicketCreateForm = ({ onCreated }) => {
   const [priority, setPriority] = useState('MEDIUM');
   const [files, setFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [resources, setResources] = useState([]);
+  const [loadingResources, setLoadingResources] = useState(false);
+  const [selectedResourceId, setSelectedResourceId] = useState('');
+
+  const loadAvailableResources = useCallback(async () => {
+    setLoadingResources(true);
+    try {
+      const response = await api.get('/resources/available');
+      setResources(response.data || []);
+    } catch (error) {
+      toast.error('Failed to load available resources');
+      setResources([]);
+    } finally {
+      setLoadingResources(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (category === 'RESOURCE') {
+      loadAvailableResources();
+    }
+  }, [category, loadAvailableResources]);
+
+  const handleResourceSelect = async (event) => {
+    const resourceId = event.target.value;
+    setSelectedResourceId(resourceId);
+    setReferenceId(resourceId);
+
+    if (!resourceId) return;
+
+    try {
+      // Mark resource as out of service
+      await api.patch(`/resources/${resourceId}/status`, { status: 'OUT_OF_SERVICE' });
+      toast.success('Resource marked as out of service');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update resource status');
+    }
+  };
 
   const onFileSelect = (event) => {
     const selected = Array.from(event.target.files || []);
@@ -28,6 +67,7 @@ const TicketCreateForm = ({ onCreated }) => {
     setReferenceId('');
     setPriority('MEDIUM');
     setFiles([]);
+    setSelectedResourceId('');
   };
 
   const handleSubmit = async (event) => {
@@ -35,6 +75,11 @@ const TicketCreateForm = ({ onCreated }) => {
 
     if (!title.trim() || !description.trim()) {
       toast.error('Title and description are required');
+      return;
+    }
+
+    if (category === 'RESOURCE' && !selectedResourceId) {
+      toast.error('Please select a resource');
       return;
     }
 
@@ -110,13 +155,29 @@ const TicketCreateForm = ({ onCreated }) => {
           <option value="CRITICAL">CRITICAL</option>
         </select>
 
-        <input
-          value={referenceId}
-          onChange={(event) => setReferenceId(event.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          placeholder="Reference ID (resource/booking)"
-          maxLength={120}
-        />
+        {category === 'RESOURCE' ? (
+          <select
+            value={selectedResourceId}
+            onChange={handleResourceSelect}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            disabled={loadingResources}
+          >
+            <option value="">Select Available Resource</option>
+            {resources.map((resource) => (
+              <option key={resource.id} value={resource.id}>
+                {resource.name} (ID: {resource.id})
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            value={referenceId}
+            onChange={(event) => setReferenceId(event.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Reference ID (resource/booking)"
+            maxLength={120}
+          />
+        )}
       </div>
 
       <div>
