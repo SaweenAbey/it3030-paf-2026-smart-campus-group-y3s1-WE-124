@@ -5,6 +5,7 @@ import { adminAPI, notificationAPI, userAPI } from '../services/api';
 import AdminSkyStatusButton from '../components/AdminSkyStatusButton';
 import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
+import TicketCenter from '../tickets/pages/TicketCenter';
 
 const ROLE_FILTER_OPTIONS = [
   { value: 'ALL', label: 'All roles' },
@@ -501,6 +502,7 @@ const AdminDashboard = () => {
   const sidebarItems = [
     { key: 'users', label: 'Users' },
     { key: 'notifications', label: 'Notifications' },
+    { key: 'incidents', label: 'Incident Tickets' },
     { key: 'inquiries', label: 'Inquiries' },
     { key: 'bookings', label: 'Booking Details' },
     { key: 'reviews', label: 'Reviews' },
@@ -1283,6 +1285,17 @@ const AdminDashboard = () => {
                 <p className="mt-1 text-sm text-slate-500">Track and respond to support requests submitted by users.</p>
                 <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
                   Professional inquiries section created. Add inquiry API integration when backend endpoint is ready.
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'incidents' && (
+              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">Incident Workflow</p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Student Incident Review</h2>
+                <p className="mt-1 text-sm text-slate-500">Review student incident tickets and assign technicians for resolution.</p>
+                <div className="mt-6">
+                  <TicketCenter />
                 </div>
               </div>
             )}
