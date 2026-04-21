@@ -20,4 +20,8 @@ public interface CampusResourceService {
     List<CampusResourceResponse> getAllResources();
 
     List<CampusResourceResponse> searchResources(ResourceType type, ResourceStatus status, Integer minCapacity, String location);
+
+    List<CampusResourceResponse> getAvailableResources();
+
+    CampusResourceResponse updateResourceStatus(Long id, ResourceStatus status);
 }

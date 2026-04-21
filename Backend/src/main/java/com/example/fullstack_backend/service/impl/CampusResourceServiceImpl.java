@@ -104,6 +104,25 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<CampusResourceResponse> getAvailableResources() {
+        List<CampusResource> resources = campusResourceRepository.searchResources(null, ResourceStatus.ACTIVE, null, null);
+        return resources.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public CampusResourceResponse updateResourceStatus(Long id, ResourceStatus status) {
+        CampusResource resource = campusResourceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found with id: " + id));
+        resource.setStatus(status);
+        CampusResource updated = campusResourceRepository.save(resource);
+        logger.info("Updated resource {} status to {}", id, status);
+        return mapToResponse(updated);
+    }
+
     private CampusResourceResponse mapToResponse(CampusResource resource) {
         return CampusResourceResponse.builder()
                 .id(resource.getId())

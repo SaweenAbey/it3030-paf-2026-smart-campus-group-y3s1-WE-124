@@ -1,16 +1,21 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
 import TicketCenter from '../tickets/pages/TicketCenter';
+import ticketApi from '../tickets/api/ticketApi';
 
 const TechnicianDashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'overview';
+  const [pendingRequests, setPendingRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
 
   const sidebarItems = [
     { key: 'overview', label: 'Overview', icon: '🔧' },
+    { key: 'accept-requests', label: 'Accept Requests', icon: '📬' },
     { key: 'tickets', label: 'Support Tickets', icon: '🎫' },
     { key: 'assets', label: 'Asset Management', icon: '📦' },
     { key: 'maintenance', label: 'Maintenance Schedule', icon: '📋' },
@@ -26,6 +31,44 @@ const TechnicianDashboard = () => {
     { label: 'System Health', value: '94%', icon: '💚', color: 'from-green-500' },
   ];
 
+  const loadPendingRequests = useCallback(async () => {
+    setLoadingRequests(true);
+    try {
+      const response = await ticketApi.getAssignedToMe();
+      const tickets = response.data || [];
+      // Filter for OPEN tickets that are assigned to current user (pending acceptance)
+      const pending = tickets.filter((ticket) => ticket.status === 'OPEN');
+      setPendingRequests(pending);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to load pending requests');
+      setPendingRequests([]);
+    } finally {
+      setLoadingRequests(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPendingRequests();
+  }, [loadPendingRequests]);
+
+  const extractAssignmentDetails = (comments) => {
+    if (!comments || comments.length === 0) return '';
+    const note = [...comments]
+      .reverse()
+      .find((comment) => (comment.content || '').startsWith('Admin assignment details:'));
+    return note ? note.content.replace('Admin assignment details:', '').trim() : '';
+  };
+
+  const onAcceptRequest = async (ticketId) => {
+    try {
+      await ticketApi.updateStatus(ticketId, { status: 'IN_PROGRESS' });
+      await loadPendingRequests();
+      toast.success('Assignment request accepted');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to accept request');
+    }
+  };
+
   const SectionCard = ({ title, subtitle, children }) => (
     <div className="bg-white rounded-3xl border border-slate-100 p-6 md:p-8 shadow-sm">
       <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
@@ -39,6 +82,71 @@ const TechnicianDashboard = () => {
       return (
         <SectionCard title="Support Tickets" subtitle="Manage service requests and support tickets.">
           <TicketCenter compact />
+        </SectionCard>
+      );
+    }
+
+    if (activeTab === 'accept-requests') {
+      return (
+        <SectionCard title="Accept Requests" subtitle="Review and accept assignment requests from admin.">
+          {loadingRequests && <p className="text-sm text-slate-500">Loading pending requests...</p>}
+
+          {!loadingRequests && pendingRequests.length === 0 && (
+            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-6 text-center">
+              <p className="text-lg font-semibold text-emerald-800">✓ All Clear!</p>
+              <p className="text-sm text-emerald-700 mt-2">You have no pending assignment requests.</p>
+            </div>
+          )}
+
+          {!loadingRequests && pendingRequests.length > 0 && (
+            <div className="space-y-4">
+              {pendingRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 p-5 hover:shadow-md transition"
+                >
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Ticket ID</p>
+                      <p className="text-lg font-bold text-slate-800">{request.ticketCode}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Admin Assigned By</p>
+                      <p className="text-lg font-bold text-slate-800">
+                        {request.reviewedByName || request.reviewedByUsername || 'System Administrator'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4 rounded-lg bg-white p-3 border border-blue-100">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Assignment Details</p>
+                    <p className="text-sm text-slate-700">
+                      {extractAssignmentDetails(request.comments) || 'No additional details provided'}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <p className="text-xs text-slate-600">
+                      <span className="font-semibold">Ticket:</span> {request.title}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      <span className="font-semibold">Priority:</span> {request.priority}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      <span className="font-semibold">Category:</span> {request.category}
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => onAcceptRequest(request.id)}
+                    className="mt-4 w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition"
+                  >
+                    ✓ Accept Request
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
       );
     }

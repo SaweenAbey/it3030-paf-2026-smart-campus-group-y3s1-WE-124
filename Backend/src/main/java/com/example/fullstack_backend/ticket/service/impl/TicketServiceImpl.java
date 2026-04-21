@@ -110,7 +110,7 @@ public class TicketServiceImpl implements TicketService {
             throw new IllegalArgumentException("You do not have permission to view assignable staff");
         }
 
-        return userRepository.findByRoleInAndIsActive(List.of(Role.TECHNICIAN, Role.MANAGER, Role.ADMIN), true)
+        return userRepository.findByRoleInAndIsActive(List.of(Role.TECHNICIAN), true)
                 .stream()
                 .map(user -> TicketAssigneeResponse.builder()
                         .id(user.getId())
@@ -136,18 +136,16 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Ticket ticket = getTicketOrThrow(ticketId);
+        User reviewer = getUserByUsername(actorUsername);
         User assignee = userRepository.findById(request.getAssigneeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignee not found: " + request.getAssigneeId()));
 
-        if (assignee.getRole() != Role.TECHNICIAN && assignee.getRole() != Role.MANAGER && assignee.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("Ticket can only be assigned to TECHNICIAN, MANAGER, or ADMIN staff");
+        if (assignee.getRole() != Role.TECHNICIAN) {
+            throw new IllegalArgumentException("Ticket can only be assigned to TECHNICIAN staff");
         }
 
         ticket.setAssignedTo(assignee);
-
-        if (ticket.getStatus() == TicketStatus.OPEN) {
-            ticket.setStatus(TicketStatus.IN_PROGRESS);
-        }
+        ticket.setReviewedBy(reviewer);
 
         return toResponse(ticketRepository.save(ticket));
     }
