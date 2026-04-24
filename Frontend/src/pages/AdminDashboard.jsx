@@ -6,6 +6,7 @@ import AdminSkyStatusButton from '../components/AdminSkyStatusButton';
 import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
 import TicketCenter from '../tickets/pages/TicketCenter';
+import { Users, Zap, Clock, Search, ChevronRight, LayoutGrid } from 'lucide-react';
 
 const ROLE_FILTER_OPTIONS = [
   { value: 'ALL', label: 'All roles' },
@@ -68,7 +69,7 @@ const groupAdminNotifications = (rows) => {
 };
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState('overview');
   const [userSection, setUserSection] = useState('all');
   const [users, setUsers] = useState([]);
   const [pendingTutors, setPendingTutors] = useState([]);
@@ -500,6 +501,7 @@ const AdminDashboard = () => {
   ];
 
   const sidebarItems = [
+    { key: 'overview', label: 'Overview' },
     { key: 'users', label: 'Users' },
     { key: 'notifications', label: 'Notifications' },
     { key: 'incidents', label: 'Incident Tickets' },
@@ -562,6 +564,154 @@ const AdminDashboard = () => {
           </Sidebar>
 
           <section className="space-y-6">
+            {activeTab === 'overview' && (
+              <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                 {/* Admin Stats Grid */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Total Platform Users', value: users.length, trend: '+14%', icon: Users, color: 'sky' },
+                      { label: 'Active Sessions', value: activeUsers, trend: '+5%', icon: Zap, color: 'emerald' },
+                      { label: 'Pending Approvals', value: pendingTutors.length, trend: '-2%', icon: Clock, color: 'rose' },
+                      { label: 'System Health', value: '99.9%', trend: 'Stable', icon: Search, color: 'indigo' },
+                    ].map((stat, i) => (
+                      <div key={i} className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md transition-all group">
+                         <div className="flex justify-between items-start mb-4">
+                            <div className={`p-3 rounded-2xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:rotate-6 transition-transform`}>
+                               <stat.icon className="w-5 h-5" />
+                            </div>
+                            <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${stat.trend.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : stat.trend === 'Stable' ? 'bg-sky-50 text-sky-600' : 'bg-rose-50 text-rose-600'}`}>
+                               {stat.trend}
+                            </span>
+                         </div>
+                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</p>
+                         <h3 className="text-3xl font-black text-slate-900 mt-1">{stat.value}</h3>
+                      </div>
+                    ))}
+                 </div>
+
+                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+                    <div className="space-y-6">
+                       {/* Growth Chart */}
+                       <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                          <div className="flex justify-between items-center mb-8">
+                             <div>
+                                <h3 className="text-xl font-black text-slate-900 tracking-tight">User Acquisition Trend</h3>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Platform growth over the last 8 months</p>
+                             </div>
+                             <div className="flex gap-2">
+                                {['DAILY', 'WEEKLY', 'MONTHLY'].map(t => (
+                                  <button key={t} className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${t === 'MONTHLY' ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
+                                    {t}
+                                  </button>
+                                ))}
+                             </div>
+                          </div>
+                          
+                          <div className="relative h-[300px] w-full bg-slate-50/20 rounded-3xl overflow-hidden">
+                             <svg className="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="none">
+                                <defs>
+                                   <linearGradient id="adminChartGrad" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor="#6366f1" stopOpacity="0.2" />
+                                      <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                                   </linearGradient>
+                                </defs>
+                                <path 
+                                  d="M0,280 C150,250 200,180 300,150 C400,120 500,200 600,100 C700,40 750,80 800,20 L800,300 L0,300 Z" 
+                                  fill="url(#adminChartGrad)"
+                                />
+                                <path 
+                                  d="M0,280 C150,250 200,180 300,150 C400,120 500,200 600,100 C700,40 750,80 800,20" 
+                                  fill="none" 
+                                  stroke="#6366f1" 
+                                  strokeWidth="4"
+                                  strokeLinecap="round"
+                                />
+                                {[50, 100, 150, 200, 250].map(y => (
+                                  <line key={y} x1="0" y1={y} x2="800" y2={y} stroke="#f1f5f9" strokeDasharray="8 8" />
+                                ))}
+                             </svg>
+                          </div>
+                       </div>
+
+                       {/* Recent Approvals / Tasks */}
+                       <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                          <h3 className="text-xl font-black text-slate-900 tracking-tight mb-6">Critical System Feed</h3>
+                          <div className="space-y-4">
+                             {[
+                               { type: 'USER', msg: 'New Tutor Application: Dr. Aris Thorne', time: '2m ago', color: 'sky' },
+                               { type: 'ALERT', msg: 'High Server Latency in US-East Node', time: '15m ago', color: 'rose' },
+                               { type: 'SYSTEM', msg: 'Daily Automated Database Backup Success', time: '1h ago', color: 'emerald' },
+                               { type: 'SEC', msg: 'Failed Admin Login Attempt (IP: 192.168.1.1)', time: '3h ago', color: 'indigo' },
+                             ].map((feed, i) => (
+                               <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent hover:border-slate-100">
+                                  <div className="flex items-center gap-4">
+                                     <div className={`w-2 h-2 rounded-full bg-${feed.color}-500 shadow-[0_0_10px_rgba(0,0,0,0.1)] shadow-${feed.color}-200`} />
+                                     <div>
+                                        <p className="text-sm font-black text-slate-900">{feed.msg}</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{feed.type} • {feed.time}</p>
+                                     </div>
+                                  </div>
+                                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="space-y-6">
+                       {/* Admin Calendar */}
+                       <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                          <div className="flex justify-between items-center mb-6">
+                             <h4 className="text-lg font-black text-slate-900">Governance</h4>
+                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                {new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}
+                             </span>
+                          </div>
+                          <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-black text-slate-300 uppercase mb-4">
+                             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
+                          </div>
+                          <div className="grid grid-cols-7 gap-2">
+                             {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }, (_, i) => {
+                               const day = i + 1;
+                               const isToday = day === new Date().getDate();
+                               return (
+                                 <div key={i} className={`aspect-square rounded-xl flex items-center justify-center text-xs font-black transition-all cursor-pointer ${isToday ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-600 hover:bg-slate-50'}`}>
+                                   {day}
+                                 </div>
+                               );
+                             })}
+                          </div>
+                       </div>
+
+                       {/* Action Cards */}
+                       <div className="bg-indigo-600 rounded-[2.5rem] p-8 text-white shadow-xl shadow-indigo-100">
+                          <Zap className="w-8 h-8 mb-4 text-indigo-200" />
+                          <h4 className="text-xl font-black mb-2">System Audit</h4>
+                          <p className="text-sm text-indigo-100 font-medium leading-relaxed mb-6">A full security and performance audit is recommended for this cycle.</p>
+                          <button className="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-50 transition-all">
+                             Start Audit Now
+                          </button>
+                       </div>
+
+                       {/* System Status Mini */}
+                       <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                          <h4 className="text-lg font-black text-slate-900 mb-6">Node Status</h4>
+                          <div className="space-y-4">
+                             {['Database Cluster', 'Media Storage', 'Auth Service'].map((node, i) => (
+                               <div key={i} className="flex justify-between items-center">
+                                  <span className="text-xs font-bold text-slate-600">{node}</span>
+                                  <div className="flex gap-1">
+                                     {[1, 2, 3, 4, 5].map(dot => <div key={dot} className="w-1.5 h-4 rounded-full bg-emerald-500/20 last:bg-emerald-500" />)}
+                                  </div>
+                               </div>
+                             ))}
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+            )}
+
             <section className="rounded-4xl border border-slate-200/70 bg-white p-6 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.25)] sm:p-8">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-700">Administration Console</p>
               <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
