@@ -15,8 +15,9 @@ import {
   Mail,
   PencilLine,
   ShieldCheck,
-  Tickets,
+  Ticket,
   UserRound,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings, cancelBooking } from '../api/bookingApi';
@@ -26,7 +27,7 @@ import uni360Logo from '../assets/logo.png';
 const TABS = [
   { key: 'dashboard', label: 'Overview', icon: LayoutGrid },
   { key: 'bookings', label: 'My Bookings', icon: CalendarCheck2 },
-  { key: 'incidents', label: 'Incidents', icon: Tickets },
+  { key: 'incidents', label: 'Incidents', icon: Ticket },
   { key: 'profile', label: 'Profile', icon: UserRound },
   { key: 'settings', label: 'Settings', icon: Cog },
 ];
@@ -36,7 +37,7 @@ const UserDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
@@ -137,88 +138,140 @@ const UserDashboard = () => {
     ];
 
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Dashboard Analytics</h2>
-          <p className="text-slate-500">Overview of your booking activity and trends.</p>
-        </div>
-
-        {loadingBookings && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
-            Loading analytics...
-          </div>
-        )}
-
-        {!loadingBookings && bookingError && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{bookingError}</div>
-        )}
-
-        {!loadingBookings && !bookingError && (
-          <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Total Bookings</p>
-                <p className="mt-2 text-3xl font-bold text-slate-800">{bookingStats.total}</p>
+      <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+         {/* User Stats Grid */}
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'My Bookings', value: bookingStats.total, trend: '+2', icon: CalendarDays, color: 'sky' },
+              { label: 'Approval Rate', value: `${chartData[0].percent}%`, trend: 'Optimal', icon: BadgeCheck, color: 'emerald' },
+              { label: 'Active Support', value: '1', trend: 'In Progress', icon: Ticket, color: 'indigo' },
+              { label: 'Reward Points', value: '850', trend: '+50', icon: Zap, color: 'amber' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md transition-all group">
+                 <div className="flex justify-between items-start mb-4">
+                    <div className={`p-3 rounded-2xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:scale-110 transition-transform`}>
+                       <stat.icon className="w-5 h-5" />
+                    </div>
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${stat.trend.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-sky-50 text-sky-600'}`}>
+                       {stat.trend}
+                    </span>
+                 </div>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</p>
+                 <h3 className="text-3xl font-black text-slate-900 mt-1">{stat.value}</h3>
               </div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
-                <p className="text-sm text-emerald-700">Approved</p>
-                <p className="mt-2 text-3xl font-bold text-emerald-800">{bookingStats.approved}</p>
-              </div>
-              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
-                <p className="text-sm text-amber-700">Pending</p>
-                <p className="mt-2 text-3xl font-bold text-amber-800">{bookingStats.pending}</p>
-              </div>
-              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
-                <p className="text-sm text-rose-700">Rejected</p>
-                <p className="mt-2 text-3xl font-bold text-rose-800">{bookingStats.rejected}</p>
-              </div>
-            </div>
+            ))}
+         </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800">Booking Status Graph</h3>
-                <div className="mt-5 space-y-4">
-                  {chartData.map((item) => (
-                    <div key={item.name}>
-                      <div className="mb-1 flex items-center justify-between text-sm">
-                        <span className="text-slate-700">{item.name}</span>
-                        <span className="font-semibold text-slate-700">{item.count} ({item.percent}%)</span>
-                      </div>
-                      <div className="h-3 w-full rounded-full bg-slate-100">
-                        <div
-                          className={`h-3 rounded-full ${item.color}`}
-                          style={{ width: `${item.percent || 2}%` }}
+         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+            <div className="space-y-6">
+               {/* Activity Graph */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                  <div className="flex justify-between items-center mb-8">
+                     <div>
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Booking Activity</h3>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Resource engagement over time</p>
+                     </div>
+                     <div className="flex gap-2">
+                        {['7D', '30D', '90D'].map(t => (
+                          <button key={t} className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${t === '30D' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
+                            {t}
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+                  
+                  <div className="relative h-[260px] w-full bg-slate-50/20 rounded-3xl overflow-hidden">
+                     <svg className="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="none">
+                        <defs>
+                           <linearGradient id="userChartGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                           </linearGradient>
+                        </defs>
+                        <path 
+                          d="M0,250 C100,230 200,280 300,180 C400,80 500,220 600,140 C700,60 750,110 800,90 L800,300 L0,300 Z" 
+                          fill="url(#userChartGrad)"
                         />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                        <path 
+                          d="M0,250 C100,230 200,280 300,180 C400,80 500,220 600,140 C700,60 750,110 800,90" 
+                          fill="none" 
+                          stroke="#3b82f6" 
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                        />
+                     </svg>
+                  </div>
+               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800">Recent Booking Details</h3>
-                <div className="mt-4 space-y-3">
-                  {bookings.slice(0, 5).map((booking) => (
-                    <div key={booking.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-800">Booking #{booking.id}</p>
-                        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">
-                          {booking.status}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {formatDateTime(booking.startTime)} to {formatDateTime(booking.endTime)}
-                      </p>
-                    </div>
-                  ))}
-                  {bookings.length === 0 && (
-                    <p className="text-sm text-slate-500">No booking records available yet.</p>
-                  )}
-                </div>
-              </div>
+               {/* Upcoming Bookings List */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight mb-6">Confirmed Upcoming</h3>
+                  <div className="space-y-4">
+                     {bookings.slice(0, 3).map((booking, i) => (
+                       <div key={i} className="flex items-center justify-between p-5 rounded-2xl border-2 border-slate-50 bg-white hover:border-blue-100 transition-all group shadow-sm">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+                                #{booking.id.toString().slice(-2)}
+                             </div>
+                             <div>
+                                <p className="text-sm font-black text-slate-900">Resource Booking</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{formatDateTime(booking.startTime)}</p>
+                             </div>
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg">
+                             {booking.status}
+                          </span>
+                       </div>
+                     ))}
+                     {bookings.length === 0 && <p className="text-center py-8 text-slate-400 font-bold uppercase text-[10px] tracking-widest">No Active Bookings</p>}
+                  </div>
+               </div>
             </div>
-          </>
-        )}
+
+            <div className="space-y-6">
+               {/* Personal Calendar */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                  <div className="flex justify-between items-center mb-6">
+                     <h4 className="text-lg font-black text-slate-900">Personal Schedule</h4>
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}
+                     </span>
+                  </div>
+                  <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-black text-slate-300 uppercase mb-4">
+                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
+                  </div>
+                  <div className="grid grid-cols-7 gap-2">
+                     {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }, (_, i) => {
+                       const day = i + 1;
+                       const isToday = day === new Date().getDate();
+                       return (
+                         <div key={i} className={`aspect-square rounded-xl flex items-center justify-center text-xs font-black transition-all cursor-pointer ${isToday ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-600 hover:bg-slate-50'}`}>
+                           {day}
+                         </div>
+                       );
+                     })}
+                  </div>
+               </div>
+
+               {/* Status Breakdown Circle */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm flex flex-col items-center">
+                  <h4 className="text-lg font-black text-slate-900 mb-6 w-full text-left">Request Success</h4>
+                  <div className="relative w-32 h-32 flex items-center justify-center mb-6">
+                     <svg className="w-full h-full -rotate-90">
+                        <circle cx="64" cy="64" r="56" fill="none" stroke="#f1f5f9" strokeWidth="12" />
+                        <circle cx="64" cy="64" r="56" fill="none" stroke="#3b82f6" strokeWidth="12" strokeDasharray="351.85" strokeDashoffset={351.85 - (351.85 * chartData[0].percent) / 100} strokeLinecap="round" className="transition-all duration-1000" />
+                     </svg>
+                     <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-black text-slate-900">{chartData[0].percent}%</span>
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Approved</span>
+                     </div>
+                  </div>
+                  <button onClick={() => navigate('/bookings')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all">
+                     New Request
+                  </button>
+               </div>
+            </div>
+         </div>
       </div>
     );
   };

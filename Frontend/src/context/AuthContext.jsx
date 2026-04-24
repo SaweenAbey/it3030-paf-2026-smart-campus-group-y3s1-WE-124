@@ -84,6 +84,16 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
+  const updateUser = async (id, userData) => {
+    const response = await userAPI.updateProfile(id, userData);
+    const updatedUser = { ...user, ...response.data };
+    
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+    
+    return response.data;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -98,6 +108,7 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         updateUserProfileImage,
         deleteUserProfileImage,
+        updateUser,
       }}
     >
       {children}
