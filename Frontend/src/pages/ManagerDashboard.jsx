@@ -23,7 +23,9 @@ import {
   Upload,
   Zap,
   LayoutGrid,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck,
+  CalendarDays
 } from 'lucide-react';
 
 const RESOURCE_TYPES = [
@@ -45,7 +47,7 @@ const RESOURCE_STATUSES = [
 const RESOURCE_FEATURE_OPTIONS = ['Mic', 'Projector', 'Speaker', 'Whiteboard', 'Air Conditioner', 'WiFi'];
 
 const ManagerDashboard = () => {
-  const { user } = useAuth();
+  const { user, updateUserProfileImage, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [resourcePanelOpen, setResourcePanelOpen] = useState(false);
@@ -67,48 +69,94 @@ const ManagerDashboard = () => {
     customFeature: '',
     status: 'ACTIVE',
   });
-  const [bookings, setBookings] = useState([
-    { id: 1, facility: 'Auditorium', date: '2026-04-15', time: '10:00 AM', booked_by: 'John Doe', status: 'Confirmed' },
-    { id: 2, facility: 'Lab A', date: '2026-04-16', time: '2:00 PM', booked_by: 'Jane Smith', status: 'Pending' },
-  ]);
-
-  const [bookingRequests, setBookingRequests] = useState([]);
-  const [maintenance, setMaintenance] = useState([
-    { id: 1, facility: 'Building A', issue: 'Roof leak', priority: 'High', assigned_tech: 'Unassigned', status: 'Open' },
-    { id: 2, facility: 'Lab B', issue: 'Broken AC', priority: 'Medium', assigned_tech: 'Ahmed Khan', status: 'In Progress' },
-  ]);
-
-  const [technicians, setTechnicians] = useState([
-    { id: 1, name: 'Ahmed Khan', specialty: 'Electrical', available: true, current_assignment: 1 },
-    { id: 2, name: 'Ali Hassan', specialty: 'Plumbing', available: true, current_assignment: null },
-    { id: 3, name: 'Fatima Al-Mansouri', specialty: 'HVAC', available: false, current_assignment: 2 },
-  ]);
-
-  const [showBookingModal, setShowBookingModal] = useState(false);
-  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
-  const [showTechnicianModal, setShowTechnicianModal] = useState(false);
   const [resources, setResources] = useState([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [showResourceModal, setShowResourceModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
+  const [showTechnicianModal, setShowTechnicianModal] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [bookingRequests, setBookingRequests] = useState([]);
+  const [maintenance, setMaintenance] = useState([]);
+  const [technicians, setTechnicians] = useState([]);
 
-  const [newBooking, setNewBooking] = useState({ facility: '', date: '', time: '', booked_by: '' });
+  const [newResource, setNewResource] = useState({ name: '', type: 'LECTURE_HALL', location: '', capacity: '', description: '', amenities: [] });
   const [newMaintenance, setNewMaintenance] = useState({ facility: '', issue: '', priority: 'Medium' });
   const [technicianAssignment, setTechnicianAssignment] = useState({ maintenance_id: '', technician_id: '' });
 
-  const handleAddBooking = () => {
-    if (!newBooking.facility || !newBooking.date || !newBooking.time || !newBooking.booked_by) {
-      toast.error('Please fill all fields');
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSecurityModal, setShowSecurityModal] = useState(false);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+
+  const [profileForm, setProfileForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    location: user?.location || '',
+  });
+
+  const [securityForm, setSecurityForm] = useState({
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  const handleAvatarUpdate = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarLoading(true);
+    try {
+      const imageUrl = await mediaUpload(file);
+      await updateUserProfileImage(imageUrl);
+      toast.success('Profile picture updated');
+    } catch (error) {
+      toast.error('Failed to update profile picture');
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    if (!securityForm.newPassword) {
+      toast.error('Please enter a new password');
       return;
     }
-    const booking = {
-      id: bookings.length + 1,
-      ...newBooking,
-      status: 'Confirmed'
-    };
-    setBookings([...bookings, booking]);
-    setNewBooking({ facility: '', date: '', time: '', booked_by: '' });
-    setShowBookingModal(false);
-    toast.success('Booking added successfully');
+    if (securityForm.newPassword !== securityForm.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    try {
+      await updateUser(user.id, {
+        ...user, // Keep existing data
+        password: securityForm.newPassword,
+        confirmPassword: securityForm.confirmPassword
+      });
+      toast.success('Password updated successfully');
+      setShowSecurityModal(false);
+      setSecurityForm({ newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update password');
+    }
   };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    if (!profileForm.name || !profileForm.email) {
+      toast.error('Name and Email are required');
+      return;
+    }
+
+    try {
+      await updateUser(user.id, profileForm);
+      toast.success('Profile updated successfully');
+      setShowProfileModal(false);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+    }
+  };
+
 
   const handleAddMaintenance = () => {
     if (!newMaintenance.facility || !newMaintenance.issue) {
@@ -153,11 +201,6 @@ const ManagerDashboard = () => {
     }
   };
 
-  const handleBookingStatusChange = (id, newStatus) => {
-    const updated = bookings.map(b => b.id === id ? { ...b, status: newStatus } : b);
-    setBookings(updated);
-    toast.success(`Booking status updated to ${newStatus}`);
-  };
 
   const handleMaintenanceStatusChange = (id, newStatus) => {
     const updated = maintenance.map(m => m.id === id ? { ...m, status: newStatus } : m);
@@ -165,10 +208,6 @@ const ManagerDashboard = () => {
     toast.success(`Maintenance status updated to ${newStatus}`);
   };
 
-  const deletBooking = (id) => {
-    setBookings(bookings.filter(b => b.id !== id));
-    toast.success('Booking deleted');
-  };
 
   const deleteMaintenance = (id) => {
     setMaintenance(maintenance.filter(m => m.id !== id));
@@ -396,10 +435,8 @@ const ManagerDashboard = () => {
   const sidebarItems = [
     { key: 'overview', label: 'Overview' },
     { key: 'booking-requests', label: 'Booking Requests' },
-    { key: 'bookings', label: 'Bookings' },
-    { key: 'maintenance', label: 'Maintenance' },
     { key: 'resources', label: 'Resources' },
-    { key: 'technicians', label: 'Assign Technician' },
+    { key: 'profile', label: 'Profile' },
   ];
 
   useEffect(() => {
@@ -410,7 +447,7 @@ const ManagerDashboard = () => {
   useEffect(() => {
     if (activeTab === 'resources') {
       fetchResources();
-    } else if (activeTab === 'overview' || activeTab === 'bookings') {
+    } else if (activeTab === 'overview') {
       fetchBookings();
     } else {
       setResourcePanelOpen(false);
@@ -635,212 +672,107 @@ const ManagerDashboard = () => {
             </div>
           )}
 
-          {/* Bookings Tab */}
-          {activeTab === 'bookings' && (
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-slate-900">Facility Bookings</h2>
-                <button
-                  onClick={() => setShowBookingModal(true)}
-                  className="rounded-lg bg-slate-900 px-6 py-2 text-white transition hover:bg-slate-700"
-                >
-                  + New Booking
-                </button>
-              </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b-2 border-slate-200 bg-slate-50">
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Facility</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Date & Time</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Booked By</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Status</th>
-                      <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {bookings.map(booking => (
-                      <tr key={booking.id} className="group hover:bg-slate-50/50 transition-all duration-300">
-                        <td className="px-6 py-5 font-bold text-slate-900 tracking-tight">{booking.facility}</td>
-                        <td className="px-6 py-5">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-xs font-black text-slate-900 tracking-tight">{booking.date}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{booking.time}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 font-semibold text-slate-600">{booking.booked_by}</td>
-                        <td className="px-6 py-5">
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] shadow-sm ${
-                            booking.status === 'Confirmed'
-                              ? 'bg-sky-50 text-sky-600 border border-sky-100'
-                              : booking.status === 'Pending'
-                              ? 'bg-amber-50 text-amber-600 border border-amber-100'
-                              : 'bg-slate-50 text-slate-600 border border-slate-200'
-                          }`}>
-                            {booking.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            <select
-                              value={booking.status}
-                              onChange={(e) => handleBookingStatusChange(booking.id, e.target.value)}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 focus:border-sky-500 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
-                            >
-                              <option>Confirmed</option>
-                              <option>Pending</option>
-                              <option>Cancelled</option>
-                            </select>
-                            <button
-                              onClick={() => deletBooking(booking.id)}
-                              className="h-10 w-10 flex items-center justify-center bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all duration-300"
-                              title="Delete Booking"
-                            >
-                              <Plus className="w-5 h-5 rotate-45" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+               {/* Identity Card */}
+               <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-sky-50/50 rounded-full -translate-y-32 translate-x-32 blur-3xl group-hover:bg-sky-100/50 transition-colors duration-1000"></div>
+                  
+                  <div className="relative flex flex-col md:flex-row gap-10 items-center md:items-start">
+                     {/* Avatar Area */}
+                     <div className="relative">
+                        <div className="w-40 h-40 rounded-[2.5rem] bg-slate-50 flex items-center justify-center overflow-hidden border-4 border-white shadow-2xl group-hover:scale-[1.02] transition-transform duration-700">
+                           {avatarLoading ? (
+                              <div className="flex flex-col items-center">
+                                 <div className="w-8 h-8 border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin"></div>
+                                 <span className="text-[8px] font-black text-sky-500 uppercase tracking-widest mt-2">Uploading...</span>
+                              </div>
+                           ) : user?.profileImageUrl ? (
+                              <img src={user.profileImageUrl} alt="Manager" className="w-full h-full object-cover" />
+                           ) : (
+                              <div className="flex flex-col items-center">
+                                 <Users className="w-16 h-16 text-slate-200" />
+                                 <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-2">No Image</span>
+                              </div>
+                           )}
+                        </div>
+                        <input 
+                           type="file" 
+                           id="avatar-upload" 
+                           className="hidden" 
+                           accept="image/*"
+                           onChange={handleAvatarUpdate}
+                        />
+                        <button 
+                           onClick={() => document.getElementById('avatar-upload').click()}
+                           className="absolute -bottom-2 -right-2 p-4 rounded-2xl bg-slate-900 text-white shadow-2xl hover:bg-sky-600 hover:scale-110 transition-all duration-300 group/edit"
+                        >
+                           <Edit2 className="w-5 h-5 group-hover/edit:rotate-12 transition-transform" />
+                        </button>
+                     </div>
 
-          {/* Maintenance Tab */}
-          {activeTab === 'maintenance' && (
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-slate-900">Maintenance Requests</h2>
-                <button
-                  onClick={() => setShowMaintenanceModal(true)}
-                  className="rounded-lg bg-slate-900 px-6 py-2 text-white transition hover:bg-slate-700"
-                >
-                  + New Request
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b-2 border-slate-200 bg-slate-50">
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Facility</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Issue Details</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Assignment</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Status</th>
-                      <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {maintenance.map(maint => (
-                      <tr key={maint.id} className="group hover:bg-slate-50/50 transition-all duration-300">
-                        <td className="px-6 py-5 font-black text-slate-900 tracking-tight">{maint.facility}</td>
-                        <td className="px-6 py-5">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-sm font-semibold text-slate-700 leading-snug line-clamp-1">{maint.issue}</span>
-                            <span className={`inline-flex w-fit px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${
-                              maint.priority === 'High' ? 'bg-rose-50 text-rose-600' : 
-                              maint.priority === 'Medium' ? 'bg-amber-50 text-amber-600' : 'bg-sky-50 text-sky-600'
-                            }`}>
-                              {maint.priority} Priority
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 font-bold text-slate-500">
-                           <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-slate-300"></div>
-                              <span>{maint.assigned_tech}</span>
+                     {/* Info Area */}
+                     <div className="flex-1 text-center md:text-left space-y-6">
+                        <div>
+                           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sky-50 text-sky-600 border border-sky-100/50 mb-4">
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span className="text-[10px] font-black uppercase tracking-widest">Verified Operations Manager</span>
                            </div>
-                        </td>
-                        <td className="px-6 py-5">
-                          <span className={`inline-flex items-center px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] shadow-sm ${
-                            maint.status === 'Open'
-                              ? 'bg-sky-50 text-sky-600 border border-sky-100'
-                              : maint.status === 'In Progress'
-                              ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
-                              : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                          }`}>
-                            {maint.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            <select
-                              value={maint.status}
-                              onChange={(e) => handleMaintenanceStatusChange(maint.id, e.target.value)}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 focus:border-sky-500 focus:ring-4 focus:ring-sky-100 outline-none transition-all"
-                            >
-                              <option>Open</option>
-                              <option>In Progress</option>
-                              <option>Completed</option>
-                            </select>
-                            <button
-                              onClick={() => deleteMaintenance(maint.id)}
-                              className="h-10 w-10 flex items-center justify-center bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all duration-300"
-                              title="Delete Request"
-                            >
-                              <Plus className="w-5 h-5 rotate-45" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+                           <h2 className="text-4xl font-black text-slate-900 tracking-tight">{user?.name || user?.username || 'Administrator'}</h2>
+                           <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-xs mt-2">Uni 360 Campus Command Center</p>
+                        </div>
 
-          {/* Assign Technician Tab */}
-          {activeTab === 'technicians' && (
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-slate-900">Technician Assignments</h2>
-                <button
-                  onClick={() => setShowTechnicianModal(true)}
-                  className="rounded-lg bg-slate-900 px-6 py-2 text-white transition hover:bg-slate-700"
-                >
-                  + Assign Technician
-                </button>
-              </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                           <div className="p-6 rounded-3xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100 transition-all duration-500">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                                 <Plus className="w-3 h-3 text-sky-500" /> Professional Email
+                              </p>
+                              <p className="text-base font-bold text-slate-700">{user?.email || 'manager@uni360.edu'}</p>
+                           </div>
+                           <div className="p-6 rounded-3xl bg-slate-50/50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-100 transition-all duration-500">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                                 <MapPin className="w-3 h-3 text-rose-500" /> Primary Office
+                              </p>
+                              <p className="text-base font-bold text-slate-700">{user?.location || 'Operations Block B, Room 204'}</p>
+                           </div>
+                        </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Available Technicians */}
-                <div>
-                  <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-slate-900">
-                    <span className="h-3 w-3 rounded-full bg-sky-600"></span>
-                    Available Technicians
-                  </h3>
-                  <div className="space-y-3">
-                    {technicians.filter(t => t.available).map(tech => (
-                      <div key={tech.id} className="rounded-lg border border-sky-100 bg-sky-50/60 p-4">
-                        <p className="font-semibold text-slate-900">{tech.name}</p>
-                        <p className="text-sm text-slate-600">{tech.specialty}</p>
-                        <p className="mt-1 text-xs text-sky-700">Available</p>
-                      </div>
-                    ))}
+                        <div className="pt-4 flex flex-wrap gap-4 justify-center md:justify-start">
+                           <button 
+                             onClick={() => setShowProfileModal(true)}
+                             className="px-10 py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-sky-600 transition-all hover:scale-105 shadow-2xl shadow-slate-200"
+                           >
+                              Edit Profile Details
+                           </button>
+                           <button 
+                             onClick={() => setShowSecurityModal(true)}
+                             className="px-8 py-4 rounded-2xl bg-white border border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-slate-50 transition-all hover:scale-105"
+                           >
+                              Security Settings
+                           </button>
+                        </div>
+                     </div>
                   </div>
-                </div>
+               </div>
 
-                {/* Busy Technicians */}
-                <div>
-                  <h3 className="mb-4 flex items-center gap-2 text-xl font-semibold text-slate-900">
-                    <span className="h-3 w-3 rounded-full bg-slate-900"></span>
-                    Busy Technicians
-                  </h3>
-                  <div className="space-y-3">
-                    {technicians.filter(t => !t.available).map(tech => (
-                      <div key={tech.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4">
-                        <p className="font-semibold text-slate-900">{tech.name}</p>
-                        <p className="text-sm text-slate-600">{tech.specialty}</p>
-                        <p className="mt-1 text-xs text-slate-500">Currently assigned (Task #{tech.current_assignment})</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+               {/* Meta Stats Grid */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                     { label: 'Authorization', value: 'Level 4 Admin', icon: ShieldCheck, color: 'sky' },
+                     { label: 'Duty Session', value: '04h 12m', icon: Clock, color: 'emerald' },
+                     { label: 'Registry Access', value: 'Full Control', icon: Zap, color: 'indigo' },
+                  ].map((stat, i) => (
+                     <div key={i} className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm hover:shadow-xl hover:shadow-slate-100 transition-all duration-500 group">
+                        <div className={`w-12 h-12 rounded-2xl bg-${stat.color}-50 text-${stat.color}-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                           <stat.icon className="w-6 h-6" />
+                        </div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                        <p className="text-xl font-black text-slate-900 mt-2">{stat.value}</p>
+                     </div>
+                  ))}
+               </div>
             </div>
           )}
 
@@ -1303,51 +1235,6 @@ const ManagerDashboard = () => {
           </section>
 
 
-      {/* Add Booking Modal */}
-      {showBookingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <h3 className="mb-4 text-2xl font-semibold text-slate-900">Add New Booking</h3>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Facility Name"
-                value={newBooking.facility}
-                onChange={(e) => setNewBooking({ ...newBooking, facility: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-4 py-2"
-              />
-              <input
-                type="date"
-                value={newBooking.date}
-                onChange={(e) => setNewBooking({ ...newBooking, date: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-4 py-2"
-              />
-              <input
-                type="time"
-                value={newBooking.time}
-                onChange={(e) => setNewBooking({ ...newBooking, time: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-4 py-2"
-              />
-              <input
-                type="text"
-                placeholder="Booked By"
-                value={newBooking.booked_by}
-                onChange={(e) => setNewBooking({ ...newBooking, booked_by: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 px-4 py-2"
-              />
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowBookingModal(false)} className="flex-1 rounded-lg bg-slate-100 px-4 py-2 text-slate-900 transition hover:bg-slate-200">
-                Cancel
-              </button>
-              <button onClick={handleAddBooking} className="flex-1 rounded-lg bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-700">
-                Add
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Add Maintenance Modal */}
       {showMaintenanceModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -1425,6 +1312,145 @@ const ManagerDashboard = () => {
                 Assign
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Profile Modal */}
+      {showProfileModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-xl rounded-[2.5rem] bg-white p-10 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Edit Profile</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Update your professional digital identity</p>
+              </div>
+              <button 
+                onClick={() => setShowProfileModal(false)}
+                className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-400"
+              >
+                <Plus className="w-6 h-6 rotate-45" />
+              </button>
+            </div>
+
+            <form onSubmit={handleProfileUpdate} className="space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                    className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none transition-all"
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Professional Email</label>
+                  <input
+                    type="email"
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none transition-all"
+                    placeholder="manager@uni360.edu"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Office Location</label>
+                  <input
+                    type="text"
+                    value={profileForm.location}
+                    onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })}
+                    className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none transition-all"
+                    placeholder="e.g. Block B, Room 204"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setShowProfileModal(false)} 
+                  className="flex-1 px-8 py-4 bg-slate-100 text-slate-500 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-[2] px-8 py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-slate-200 hover:bg-sky-600 transition-all"
+                >
+                  Save Profile Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Security Settings Modal */}
+      {showSecurityModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-xl rounded-[2.5rem] bg-white p-10 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">Security Settings</h3>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Update your account access credentials</p>
+              </div>
+              <button 
+                onClick={() => setShowSecurityModal(false)}
+                className="p-2 hover:bg-slate-50 rounded-xl transition-colors text-slate-400"
+              >
+                <Plus className="w-6 h-6 rotate-45" />
+              </button>
+            </div>
+
+            <form onSubmit={handlePasswordUpdate} className="space-y-6">
+              <div className="space-y-4">
+                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 mb-2">
+                   <div className="flex items-center gap-3 text-sky-600 mb-2">
+                      <ShieldCheck className="w-5 h-5" />
+                      <p className="text-xs font-black uppercase tracking-widest">Password Protocol</p>
+                   </div>
+                   <p className="text-[10px] font-bold text-slate-400 leading-relaxed uppercase tracking-tight">Ensure your new password contains at least 8 characters including symbols and numerals for optimal campus security.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">New Secure Password</label>
+                  <input
+                    type="password"
+                    value={securityForm.newPassword}
+                    onChange={(e) => setSecurityForm({ ...securityForm, newPassword: e.target.value })}
+                    className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none transition-all"
+                    placeholder="••••••••••••"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={securityForm.confirmPassword}
+                    onChange={(e) => setSecurityForm({ ...securityForm, confirmPassword: e.target.value })}
+                    className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none transition-all"
+                    placeholder="••••••••••••"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setShowSecurityModal(false)} 
+                  className="flex-1 px-8 py-4 bg-slate-100 text-slate-500 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-[2] px-8 py-4 bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all"
+                >
+                  Update Account Password
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

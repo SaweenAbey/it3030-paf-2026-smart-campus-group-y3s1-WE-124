@@ -19,13 +19,20 @@ const Navbar = () => {
   const profileImageUrl = (user?.profileImageUrl || '').trim();
   const hasProfileImage = /^https?:\/\//i.test(profileImageUrl);
 
-  const navLinks = [
+  const baseLinks = [
     { label: 'Home', to: '/' },
     { label: 'All Resources', to: '/resources' },
     { label: 'Booking', to: '/bookings' },
     { label: 'Services', to: '/services' },
     { label: 'Support', to: '/support' },
   ];
+
+  const userRole = user?.role?.toUpperCase() || '';
+  const isManagerOrTechnician = userRole === 'MANAGER' || userRole === 'TECHNICIAN';
+
+  const navLinks = isManagerOrTechnician 
+    ? baseLinks.filter(link => link.label !== 'Booking' && link.label !== 'Services')
+    : baseLinks;
 
   const isActive = (to) => {
     if (to.includes('?')) {

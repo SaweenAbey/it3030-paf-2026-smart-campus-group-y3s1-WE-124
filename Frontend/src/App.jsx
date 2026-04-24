@@ -110,6 +110,30 @@ const PublicRoute = ({ children }) => {
     : children;
 };
 
+// Restricted Route for Managers and Technicians
+const RestrictedRoute = ({ children }) => {
+  const { user, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#38bdf8] border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" />;
+  }
+
+  const userRole = (user?.role || '').toUpperCase();
+  if (userRole === 'MANAGER' || userRole === 'TECHNICIAN') {
+    return <Navigate to={getDefaultRouteByRole(user?.role)} />;
+  }
+
+  return children;
+};
+
 function AppContent() {
   const location = useLocation();
   const hideNavbar = ['/login', '/admin-login', '/manager-login', '/signup', '/role-selector', '/dashboard', '/admin-dashboard', '/manager-dashboard'].includes(location.pathname);
@@ -123,9 +147,9 @@ function AppContent() {
         <Route
           path="/bookings"
           element={
-            <ProtectedRoute>
+            <RestrictedRoute>
               <BookingDashboard />
-            </ProtectedRoute>
+            </RestrictedRoute>
           }
         />
         <Route
@@ -144,7 +168,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route path="/services" element={<Services />} />
+        <Route 
+          path="/services" 
+          element={
+            <RestrictedRoute>
+              <Services />
+            </RestrictedRoute>
+          } 
+        />
         <Route path="/support" element={<Support />} />
         <Route
           path="/dashboard"
