@@ -169,9 +169,10 @@ const AdminDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'notifications') {
+    if (activeTab === 'notifications' || activeTab === 'overview') {
       loadAdminNotificationsLight();
-    } else if (activeTab === 'reviews') {
+    }
+    if (activeTab === 'reviews') {
       loadReviews();
     }
   }, [activeTab, loadAdminNotificationsLight, loadReviews]);
@@ -582,6 +583,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const formatTimeAgo = (dateStr) => {
+    if (!dateStr) return 'Unknown time';
+    const now = new Date();
+    const past = new Date(dateStr);
+    const diffInMs = now - past;
+    const diffInMins = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMins / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMins < 1) return 'Just now';
+    if (diffInMins < 60) return `${diffInMins}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    return `${diffInDays}d ago`;
+  };
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#f8fafc_100%)]">
       <main className="mx-auto max-w-360 px-4 py-6 sm:px-6 lg:px-8">
@@ -670,28 +686,43 @@ const AdminDashboard = () => {
                        </div>
 
                        {/* Recent Approvals / Tasks */}
-                       <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
-                          <h3 className="text-xl font-black text-slate-900 tracking-tight mb-6">Critical System Feed</h3>
-                          <div className="space-y-4">
-                             {[
-                               { type: 'USER', msg: 'New Tutor Application: Dr. Aris Thorne', time: '2m ago', color: 'sky' },
-                               { type: 'ALERT', msg: 'High Server Latency in US-East Node', time: '15m ago', color: 'rose' },
-                               { type: 'SYSTEM', msg: 'Daily Automated Database Backup Success', time: '1h ago', color: 'emerald' },
-                               { type: 'SEC', msg: 'Failed Admin Login Attempt (IP: 192.168.1.1)', time: '3h ago', color: 'indigo' },
-                             ].map((feed, i) => (
-                               <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent hover:border-slate-100">
-                                  <div className="flex items-center gap-4">
-                                     <div className={`w-2 h-2 rounded-full bg-${feed.color}-500 shadow-[0_0_10px_rgba(0,0,0,0.1)] shadow-${feed.color}-200`} />
-                                     <div>
-                                        <p className="text-sm font-black text-slate-900">{feed.msg}</p>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{feed.type} • {feed.time}</p>
-                                     </div>
-                                  </div>
-                                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
-                               </div>
-                             ))}
-                          </div>
-                       </div>
+                        <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                           <h3 className="text-xl font-black text-slate-900 tracking-tight mb-6">Critical System Feed</h3>
+                           <div className="space-y-4">
+                              {notifLoading ? (
+                                <div className="flex flex-col items-center justify-center py-12 gap-2 opacity-50">
+                                   <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 animate-spin rounded-full" />
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing feed...</p>
+                                </div>
+                              ) : adminNotifications.length === 0 ? (
+                                <div className="py-12 text-center opacity-50">
+                                   <p className="text-sm font-medium text-slate-500 italic">System quiet. No new updates.</p>
+                                </div>
+                              ) : (
+                                adminNotifications.slice(0, 6).map((notif, i) => {
+                                  let color = 'sky';
+                                  if (notif.type === 'ERROR') color = 'rose';
+                                  if (notif.type === 'SUCCESS') color = 'emerald';
+                                  if (notif.type === 'WARNING') color = 'amber';
+
+                                  return (
+                                    <div key={notif.id || i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent hover:border-slate-100">
+                                       <div className="flex items-center gap-4">
+                                          <div className={`w-2.5 h-2.5 rounded-full bg-${color}-500 shadow-[0_0_12px_rgba(0,0,0,0.1)]`} />
+                                          <div>
+                                             <p className="text-sm font-black text-slate-900 leading-tight">{notif.title}</p>
+                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                               {notif.type} • {formatTimeAgo(notif.createdAt)}
+                                             </p>
+                                          </div>
+                                       </div>
+                                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                  );
+                                })
+                              )}
+                           </div>
+                        </div>
                     </div>
 
                     <div className="space-y-6">
@@ -748,29 +779,6 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            <section className="rounded-4xl border border-slate-200/70 bg-white p-6 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.25)] sm:p-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-700">Administration Console</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                Campus Operations Command Center
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                Manage user lifecycle, operational notifications, service requests, bookings, and reviews from a single governed workspace.
-              </p>
-
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {stats.map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
-                    <p className={`mt-2 inline-flex rounded-xl bg-white px-3 py-2 text-2xl font-semibold text-slate-900 ring-1 ring-slate-200`}>
-                      {item.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
 
             {activeTab === 'users' && (
               <div className="rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
