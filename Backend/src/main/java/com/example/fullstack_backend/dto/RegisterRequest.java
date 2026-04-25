@@ -22,6 +22,10 @@ public class RegisterRequest {
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^it\\d+@my\\.sliit\\.lk$",
+        message = "Email must be a valid IT number format (e.g., it23748330@my.sliit.lk)"
+    )
     private String email;
 
     @NotBlank(message = "Username is required")
@@ -29,13 +33,19 @@ public class RegisterRequest {
     private String username;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+        message = "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character"
+    )
     private String password;
 
     @NotBlank(message = "Confirm password is required")
     private String confirmPassword;
 
-    @Size(max = 15, message = "Phone number cannot exceed 15 characters")
+    @jakarta.validation.constraints.Pattern(
+        regexp = "^[0-9]{10}$",
+        message = "Phone number must be exactly 10 digits"
+    )
     private String phoneNumber;
 
     @Size(max = 255, message = "Address cannot exceed 255 characters")

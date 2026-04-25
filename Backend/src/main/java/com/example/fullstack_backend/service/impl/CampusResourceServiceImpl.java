@@ -31,6 +31,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
 
     @Override
     public CampusResourceResponse createResource(CampusResourceRequest request) {
+        validateAvailabilityTimes(request.getAvailabilityStartTime(), request.getAvailabilityEndTime());
+
         CampusResource resource = CampusResource.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -52,6 +54,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
 
     @Override
     public CampusResourceResponse updateResource(Long id, CampusResourceRequest request) {
+        validateAvailabilityTimes(request.getAvailabilityStartTime(), request.getAvailabilityEndTime());
+
         CampusResource existing = campusResourceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource not found with id: " + id));
 
@@ -150,6 +154,14 @@ public class CampusResourceServiceImpl implements CampusResourceService {
         return request.getAvailabilityDurationMinutes() != null && request.getAvailabilityDurationMinutes() > 0
                 ? request.getAvailabilityDurationMinutes()
                 : null;
+    }
+
+    private void validateAvailabilityTimes(String start, String end) {
+        if (start != null && end != null) {
+            if (start.compareTo(end) >= 0) {
+                throw new IllegalArgumentException("Operation end time must be after the start time");
+            }
+        }
     }
 
     private Set<String> normalizeFeatures(Set<String> incomingFeatures) {
