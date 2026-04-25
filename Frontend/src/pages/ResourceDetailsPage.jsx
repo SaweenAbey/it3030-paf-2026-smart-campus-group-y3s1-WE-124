@@ -3,21 +3,24 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { resourceAPI, bookingAPI } from '../services/api';
 import toast from 'react-hot-toast';
-import { 
-  ArrowLeft, 
-  Users, 
-  MapPin, 
-  Clock, 
-  Shield, 
-  Zap, 
-  Info, 
-  CheckCircle2, 
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ArrowLeft,
+  Users,
+  MapPin,
+  Clock,
+  Shield,
+  Zap,
+  Info,
+  CheckCircle2,
   Calendar,
   Layers,
   ChevronRight,
   Sparkles,
   Heart,
-  Share2
+  Share2,
+  Lock,
+  ChevronLeft
 } from 'lucide-react';
 
 const RESOURCE_FEATURES = {
@@ -43,6 +46,25 @@ const RESOURCE_FEATURES = {
   ],
 };
 
+const GENERATE_SLOTS = (durationMinutes = 30) => {
+  const slots = [];
+  const startHour = 8;
+  const endHour = 20;
+
+  let current = new Date();
+  current.setHours(startHour, 0, 0, 0);
+
+  const end = new Date();
+  end.setHours(endHour, 0, 0, 0);
+
+  while (current < end) {
+    const timeString = current.toTimeString().slice(0, 5);
+    slots.push(timeString);
+    current.setMinutes(current.getMinutes() + durationMinutes);
+  }
+  return slots;
+};
+
 export default function ResourceDetailsPage() {
   const { resourceId } = useParams();
   const navigate = useNavigate();
@@ -51,12 +73,17 @@ export default function ResourceDetailsPage() {
   const [resource, setResource] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bookingForm, setBookingForm] = useState({
+    date: new Date().toISOString().split('T')[0],
     startTime: '',
     endTime: '',
     purpose: '',
     expectedAttendees: '',
   });
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 50) + 12);
+  const [selectedSlots, setSelectedSlots] = useState([]);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -66,6 +93,12 @@ export default function ResourceDetailsPage() {
     }
     fetchResourceDetails();
   }, [resourceId, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (resource) {
+      fetchBookingsForDate(bookingForm.date);
+    }
+  }, [bookingForm.date, resource]);
 
   const fetchResourceDetails = async () => {
     setLoading(true);
@@ -81,22 +114,175 @@ export default function ResourceDetailsPage() {
     }
   };
 
-  const availableFeatures = resource ? RESOURCE_FEATURES[resource.type] || [] : [];
+  const fetchBookingsForDate = async (date) => {
+    try {
+      const res = await bookingAPI.getApprovedByResource(resourceId);
+      const allBookings = res.data || [];
+      // Filter bookings for the selected date
+      const dayBookings = allBookings.filter(b => b.startTime.startsWith(date));
+      setBookedSlots(dayBookings);
+    } catch (error) {
+      console.warn('Failed to fetch bookings for slots', error);
+    }
+  };
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+    toast.success(isLiked ? 'Removed from favorites' : 'Added to favorites', {
+      icon: isLiked ? '💔' : '❤️',
+      style: { borderRadius: '20px', background: '#333', color: '#fff' }
+    });
+  };
+
+  const handleShare = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard!', {
+      style: { borderRadius: '20px', background: '#333', color: '#fff' }
+    });
+  };
+
+  const getRealFeatures = () => {
+    if (!resource) return [];
+
+    // If resource has specific features from backend, use them
+    if (resource.features && resource.features.length > 0) {
+      return resource.features.map(f => ({
+        id: f,
+        label: f.replace(/_/g, ' '),
+        icon: '🔹'
+      }));
+    }
+
+    // Fallback to type-based defaults if no specific features are set
+    return RESOURCE_FEATURES[resource.type] || [];
+  };
+
+  const availableFeatures = getRealFeatures();
 
   const handleBookingChange = (e) => {
     const { name, value } = e.target;
     setBookingForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const isSlotBooked = (time) => {
+    const now = new Date();
+    const [hours, minutes] = time.split(':').map(Number);
+    const slotDateTime = new Date(bookingForm.date);
+    slotDateTime.setHours(hours, minutes, 0, 0);
+
+    // Check if slot is in the past
+    if (slotDateTime < now) return true;
+
+    return bookedSlots.some(b => {
+      const start = new Date(b.startTime);
+      const end = new Date(b.endTime);
+      return slotDateTime >= start && slotDateTime < end;
+    });
+  };
+
+  const handleSlotClick = (time) => {
+    if (isSlotBooked(time)) return;
+
+    if (selectedSlots.length === 0) {
+      setSelectedSlots([time]);
+    } else if (selectedSlots.length === 1) {
+      const start = selectedSlots[0];
+      const end = time;
+
+      if (start === end) {
+        setSelectedSlots([]);
+        return;
+      }
+
+      // Generate range
+      const allSlots = GENERATE_SLOTS(resource?.availabilityDurationMinutes || 30);
+      const startIndex = allSlots.indexOf(start);
+      const endIndex = allSlots.indexOf(end);
+
+      const range = allSlots.slice(
+        Math.min(startIndex, endIndex),
+        Math.max(startIndex, endIndex) + 1
+      );
+
+      // Check if any slot in range is booked
+      const hasBooked = range.some(s => isSlotBooked(s));
+      if (hasBooked) {
+        toast.error('Range contains already booked slots');
+        setSelectedSlots([time]);
+        return;
+      }
+
+      setSelectedSlots(range);
+    } else {
+      // If already a range, start fresh with new selection
+      setSelectedSlots([time]);
+    }
+  };
+
+  // Auto-fill startTime and endTime based on selected slots
+  useEffect(() => {
+    if (selectedSlots.length > 0) {
+      const sorted = [...selectedSlots].sort((a, b) => {
+        const [ha, ma] = a.split(':').map(Number);
+        const [hb, mb] = b.split(':').map(Number);
+        return (ha * 60 + ma) - (hb * 60 + mb);
+      });
+
+      const first = sorted[0];
+      const last = sorted[sorted.length - 1];
+
+      // End time calculation based on resource duration
+      const duration = resource?.availabilityDurationMinutes || 30;
+      const [h, m] = last.split(':').map(Number);
+      const totalMinutes = h * 60 + m + duration;
+      const endH = Math.floor(totalMinutes / 60);
+      const endM = totalMinutes % 60;
+      const endTime = `${endH.toString().padStart(2, '0')}:${endM.toString().padStart(2, '0')}`;
+
+      setBookingForm(prev => ({
+        ...prev,
+        startTime: `${bookingForm.date}T${first}`,
+        endTime: `${bookingForm.date}T${endTime}`
+      }));
+    } else {
+      setBookingForm(prev => ({ ...prev, startTime: '', endTime: '' }));
+    }
+  }, [selectedSlots, bookingForm.date]);
+
   const handleSubmitBooking = async (e) => {
     e.preventDefault();
+
+    const now = new Date();
+    const start = new Date(bookingForm.startTime);
+    const end = new Date(bookingForm.endTime);
+
     if (!bookingForm.startTime || !bookingForm.endTime || !bookingForm.purpose) {
-      toast.error('Please fill in all fields');
+      toast.error('Please select time slots and fill required fields');
       return;
     }
 
-    if (new Date(bookingForm.endTime) <= new Date(bookingForm.startTime)) {
-      toast.error('End time must be after start time');
+    if (start < now) {
+      toast.error('Start time cannot be in the past');
+      return;
+    }
+
+    if (end <= start) {
+      toast.error('End time must be after the start time');
+      return;
+    }
+
+    // Minimum booking duration check (e.g., 15 minutes)
+    const durationMs = end - start;
+    const durationMins = durationMs / (1000 * 60);
+    if (durationMins < 15) {
+      toast.error('Minimum booking duration is 15 minutes');
+      return;
+    }
+
+    if (bookingForm.expectedAttendees && parseInt(bookingForm.expectedAttendees) > resource.capacity) {
+      toast.error(`Capacity exceeded. Maximum allowed: ${resource.capacity}`);
       return;
     }
 
@@ -123,7 +309,12 @@ export default function ResourceDetailsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="h-10 w-10 border-2 border-slate-100 border-t-slate-900 rounded-full animate-spin"></div>
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-2 h-2 bg-sky-500 rounded-full animate-ping"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -131,205 +322,269 @@ export default function ResourceDetailsPage() {
   if (!resource) return null;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA]">
-      {/* Subtle Nav */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <button 
+    <div className="min-h-screen bg-[#FAFAFA] pb-20">
+      <main className="max-w-7xl mx-auto px-6 pt-12 lg:pt-16">
+
+        {/* Back navigation */}
+        <div className="mb-8 flex items-center justify-between">
+          <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors text-sm font-medium"
+            className="group flex items-center gap-3 text-slate-400 hover:text-slate-900 transition-all font-black text-[10px] uppercase tracking-[0.2em]"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-full bg-white border border-slate-100 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-all">
+              <ArrowLeft className="w-4 h-4" />
+            </div>
             Back to catalogue
           </button>
-          
-          <div className="flex items-center gap-4">
-             <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
-               <Share2 className="w-4 h-4" />
-             </button>
-             <button className="p-2 text-slate-400 hover:text-rose-500 transition-colors">
-               <Heart className="w-4 h-4" />
-             </button>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-100 rounded-full shadow-sm hover:shadow-md transition-all text-slate-400 hover:text-slate-900 group"
+            >
+              <Share2 className="w-4 h-4" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Share</span>
+            </button>
+            <button
+              onClick={handleLike}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full shadow-sm hover:shadow-md transition-all border group ${isLiked ? 'bg-rose-50 border-rose-100 text-rose-500' : 'bg-white border-slate-100 text-slate-400 hover:text-rose-500'
+                }`}
+            >
+              <Heart className={`w-4 h-4 transition-transform group-active:scale-150 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="text-[10px] font-black uppercase tracking-widest">{likeCount} Likes</span>
+            </button>
           </div>
         </div>
-      </nav>
 
-      <main className="max-w-6xl mx-auto px-6 py-12 lg:py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-          
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+
           {/* Content Side */}
-          <div className="lg:col-span-7 space-y-12">
-            
-            {/* Minimal Header */}
-            <div className="space-y-6">
+          <div className="lg:col-span-7 space-y-10">
+
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <span className="px-3 py-1 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-full">
+                <span className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg">
                   {resource.type?.replace(/_/g, ' ')}
                 </span>
-                <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border ${
-                  resource.status === 'ACTIVE' 
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                    : 'bg-rose-50 text-rose-600 border-rose-100'
-                }`}>
-                  {resource.status === 'ACTIVE' ? 'Online' : 'Maintenance'}
-                </span>
+                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">Live Now</span>
+                </div>
               </div>
-              
-              <h1 className="text-5xl lg:text-7xl font-bold text-slate-900 tracking-tight leading-[0.95]">
+
+              <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">
                 {resource.name}
               </h1>
 
               <div className="flex flex-wrap items-center gap-6 text-slate-400">
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-slate-300" />
-                  <span className="text-sm font-medium">{resource.location}</span>
+                  <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-slate-300" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">{resource.location}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-slate-300" />
-                  <span className="text-sm font-medium">{resource.capacity} capacity</span>
+                  <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center">
+                    <Users className="w-4 h-4 text-slate-300" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">{resource.capacity} CAPACITY</span>
                 </div>
               </div>
             </div>
 
-            {/* Hero Image */}
-            <div className="aspect-[16/10] rounded-[2rem] overflow-hidden bg-slate-100 border border-slate-100 group">
+            <div className="relative rounded-[2.5rem] overflow-hidden bg-slate-100 border border-slate-100 shadow-2xl group">
               {resource.imageUrl ? (
-                <img 
-                  src={resource.imageUrl} 
+                <img
+                  src={resource.imageUrl}
                   alt={resource.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[2s]"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[5s]"
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-4 bg-slate-50 text-slate-200">
+                <div className="aspect-[16/9] w-full flex flex-col items-center justify-center gap-4 bg-slate-50 text-slate-200">
                   <Layers className="w-16 h-16" />
-                  <p className="text-xs font-bold uppercase tracking-widest">No preview available</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest">No preview available</p>
                 </div>
               )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
             </div>
 
-            {/* Content Blocks */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               <section className="space-y-4">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Description</h3>
-                <p className="text-slate-500 text-sm leading-relaxed font-medium">
-                  {resource.description || "A premium campus space optimized for academic excellence and collaborative research. Designed with versatility in mind to support a wide range of university activities."}
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 flex items-center gap-2">
+                  <Info className="w-3.5 h-3.5 text-sky-500" /> Overview
+                </h3>
+                <p className="text-slate-500 text-[13px] leading-relaxed font-bold">
+                  {resource.description || "No detailed description provided for this campus facility."}
                 </p>
               </section>
 
               <section className="space-y-4">
-                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-900">Amenities</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-900 flex items-center gap-2">
+                  <Zap className="w-3.5 h-3.5 text-amber-500" /> Infrastructure
+                </h3>
                 <div className="flex flex-wrap gap-2">
                   {availableFeatures.length > 0 ? availableFeatures.map((f) => (
-                    <div key={f.id} className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm transition-all hover:shadow-md cursor-default">
-                      <span className="text-sm">{f.icon}</span>
-                      <span className="text-[11px] font-bold text-slate-600">{f.label}</span>
+                    <div key={f.id} className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-100 shadow-sm hover:border-slate-200 transition-all cursor-default group">
+                      <span className="text-sm group-hover:scale-125 transition-transform">{f.icon}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">{f.label}</span>
                     </div>
                   )) : (
-                    <span className="text-[11px] font-bold text-slate-400">Standard equipment included</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Standard equipment included</span>
                   )}
                 </div>
               </section>
             </div>
           </div>
 
-          {/* Form Side */}
           <div className="lg:col-span-5">
-            <div className="sticky top-32">
-              <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.06)]">
+            <div className="sticky top-12">
+              <div className="bg-white rounded-[2.5rem] p-8 lg:p-10 border border-slate-100 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.08)] overflow-hidden">
                 <div className="space-y-8">
-                  <div>
-                    <h2 className="text-2xl font-bold text-slate-900">Reserve Space</h2>
-                    <p className="text-slate-400 text-xs font-medium mt-1 uppercase tracking-widest">Select your desired timeline</p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-black text-slate-900">Reserve Space</h2>
+                      <p className="text-slate-400 text-[9px] font-black mt-1 uppercase tracking-widest flex items-center gap-1.5">
+                        <Calendar className="w-3 h-3" /> Select available slots
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="px-3 py-1 bg-sky-50 rounded-lg">
+                        <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest">{selectedSlots.length} Selected</span>
+                      </div>
+                      {selectedSlots.length > 0 && (
+                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest animate-in fade-in slide-in-from-right-2">
+                          {bookingForm.startTime.split('T')[1]} - {bookingForm.endTime.split('T')[1]}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {resource.status === 'ACTIVE' ? (
-                    <form onSubmit={handleSubmitBooking} className="space-y-6">
+                    <form onSubmit={handleSubmitBooking} className="space-y-8">
+                      <div className="space-y-2">
+                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Choose Date</label>
+                        <div className="relative">
+                          <input
+                            type="date"
+                            name="date"
+                            min={new Date().toISOString().split('T')[0]}
+                            value={bookingForm.date}
+                            onChange={handleBookingChange}
+                            className="w-full px-5 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-slate-900 text-xs font-black focus:bg-white focus:ring-4 focus:ring-sky-500/5 focus:border-sky-500 transition-all outline-none"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Timeline Availability</label>
+                          <div className="flex gap-3">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-slate-100" />
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Free</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-sky-500" />
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Selected</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 rounded-full bg-slate-200" />
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Booked</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-4 gap-2 h-64 overflow-y-auto pr-2 scrollbar-hide border-y border-slate-50 py-4">
+                          {GENERATE_SLOTS(resource?.availabilityDurationMinutes || 30).map((time) => {
+                            const isBooked = isSlotBooked(time);
+                            const isSelected = selectedSlots.includes(time);
+                            return (
+                              <button
+                                key={time}
+                                type="button"
+                                disabled={isBooked}
+                                onClick={() => handleSlotClick(time)}
+                                className={`py-3 rounded-xl text-[9px] font-black transition-all border flex flex-col items-center justify-center gap-1 ${isBooked
+                                    ? 'bg-slate-50 text-slate-300 border-transparent cursor-not-allowed opacity-50'
+                                    : isSelected
+                                      ? 'bg-sky-500 text-white border-sky-600 shadow-lg shadow-sky-100'
+                                      : 'bg-white text-slate-500 border-slate-100 hover:border-sky-500 hover:text-sky-600 hover:bg-sky-50/30'
+                                  }`}
+                              >
+                                {isBooked ? <Lock className="w-3 h-3" /> : time}
+                                {isSelected && !isBooked && <CheckCircle2 className="w-2.5 h-2.5" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       <div className="space-y-4">
                         <div className="group space-y-1.5">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Arrival</label>
-                          <input
-                            type="datetime-local"
-                            name="startTime"
-                            value={bookingForm.startTime}
+                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Event Purpose</label>
+                          <textarea
+                            name="purpose"
+                            value={bookingForm.purpose}
                             onChange={handleBookingChange}
-                            className="w-full px-5 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-slate-900 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-slate-100 focus:border-slate-900 transition-all outline-none"
+                            rows="2"
+                            className="w-full px-4 py-3 bg-slate-50/50 border border-slate-100 rounded-xl text-slate-900 text-[11px] font-bold focus:bg-white focus:ring-4 focus:ring-sky-500/5 focus:border-sky-500 transition-all outline-none resize-none"
+                            placeholder="Briefly describe the university activity..."
                             required
                           />
                         </div>
+
                         <div className="group space-y-1.5">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Departure</label>
-                          <input
-                            type="datetime-local"
-                            name="endTime"
-                            value={bookingForm.endTime}
-                            onChange={handleBookingChange}
-                            className="w-full px-5 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-slate-900 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-slate-100 focus:border-slate-900 transition-all outline-none"
-                            required
-                          />
+                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Expected Size</label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              name="expectedAttendees"
+                              max={resource.capacity}
+                              value={bookingForm.expectedAttendees}
+                              onChange={handleBookingChange}
+                              className="w-full px-5 py-4 bg-slate-50/50 border border-slate-100 rounded-xl text-slate-900 text-sm font-black focus:bg-white focus:ring-4 focus:ring-sky-500/5 focus:border-sky-500 transition-all outline-none"
+                              placeholder={`Max ${resource.capacity}`}
+                            />
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="group space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Project Objective</label>
-                        <textarea
-                          name="purpose"
-                          value={bookingForm.purpose}
-                          onChange={handleBookingChange}
-                          rows="2"
-                          className="w-full px-5 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-slate-900 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-slate-100 focus:border-slate-900 transition-all outline-none resize-none"
-                          placeholder="What's your plan?"
-                          required
-                        />
-                      </div>
-
-                      <div className="group space-y-1.5">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Total Attendees</label>
-                        <input
-                          type="number"
-                          name="expectedAttendees"
-                          max={resource.capacity}
-                          value={bookingForm.expectedAttendees}
-                          onChange={handleBookingChange}
-                          className="w-full px-5 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl text-slate-900 text-sm font-bold focus:bg-white focus:ring-4 focus:ring-slate-100 focus:border-slate-900 transition-all outline-none"
-                          placeholder={`Max ${resource.capacity}`}
-                        />
                       </div>
 
                       <button
                         type="submit"
-                        disabled={bookingLoading}
-                        className="w-full py-5 bg-slate-900 text-white font-bold rounded-2xl shadow-xl shadow-slate-200 hover:shadow-2xl hover:-translate-y-0.5 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        disabled={bookingLoading || selectedSlots.length === 0}
+                        className="w-full py-5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-slate-200 hover:shadow-2xl hover:bg-sky-600 hover:shadow-sky-100 transition-all disabled:opacity-50 flex items-center justify-center gap-3 active:scale-95"
                       >
-                         {bookingLoading ? (
-                           <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                         ) : (
-                           <>
-                             <span>Request Booking</span>
-                             <ChevronRight className="w-4 h-4" />
-                           </>
-                         )}
+                        {bookingLoading ? (
+                          <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                          <>
+                            <span>Confirm Reservation</span>
+                            <ChevronRight className="w-4 h-4" />
+                          </>
+                        )}
                       </button>
 
                       <div className="flex items-center justify-center gap-2 text-slate-400">
-                        <Shield className="w-3 h-3" />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Instant Security Verification</span>
+                        <Shield className="w-3 h-3 text-sky-500" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">Secured Campus Registry</span>
                       </div>
                     </form>
                   ) : (
                     <div className="text-center space-y-6 py-8">
-                       <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto">
-                         <Zap className="w-8 h-8 text-rose-500" />
-                       </div>
-                       <div className="space-y-2">
-                         <h3 className="text-lg font-bold text-slate-900">Temporarily Offline</h3>
-                         <p className="text-xs text-slate-500 font-medium leading-relaxed">This resource is currently under scheduled maintenance and cannot be reserved.</p>
-                       </div>
-                       <button 
-                         onClick={() => navigate('/bookings')}
-                         className="w-full py-4 border border-slate-200 text-slate-900 font-bold rounded-xl hover:bg-slate-50 transition-all text-xs uppercase tracking-widest"
-                       >
-                         View Available Spaces
-                       </button>
+                      <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto">
+                        <Zap className="w-8 h-8 text-rose-500" />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-black text-slate-900">Currently Offline</h3>
+                        <p className="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-widest">Maintenance Mode Active</p>
+                      </div>
+                      <button
+                        onClick={() => navigate('/bookings')}
+                        className="w-full py-4 border border-slate-100 text-slate-900 font-black rounded-xl hover:bg-slate-50 transition-all text-[10px] uppercase tracking-widest"
+                      >
+                        Find Alternate Space
+                      </button>
                     </div>
                   )}
                 </div>
@@ -339,15 +594,22 @@ export default function ResourceDetailsPage() {
         </div>
       </main>
 
-      {/* Minimal Footer */}
-      <footer className="max-w-6xl mx-auto px-6 py-20 border-t border-slate-100 mt-20">
-         <div className="flex flex-col md:flex-row items-center justify-between gap-10 opacity-40 hover:opacity-100 transition-opacity">
-            <div className="flex items-center gap-2">
-               <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black italic text-sm">U</div>
-               <span className="text-sm font-black tracking-tight text-slate-900 uppercase tracking-widest">UNI360 Operations</span>
+      <footer className="max-w-7xl mx-auto px-6 py-20 border-t border-slate-100 mt-20">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black italic text-lg shadow-lg">U</div>
+            <div>
+              <span className="text-[11px] font-black tracking-tight text-slate-900 uppercase tracking-widest block">UNI360 Operations</span>
+              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Campus Command Center</span>
             </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">© 2026 Campus Resource Management</p>
-         </div>
+          </div>
+          <div className="flex gap-8">
+            {['Policy', 'Support', 'Terms'].map(t => (
+              <button key={t} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">{t}</button>
+            ))}
+          </div>
+          <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">© 2026 Smart University Systems</p>
+        </div>
       </footer>
     </div>
   );

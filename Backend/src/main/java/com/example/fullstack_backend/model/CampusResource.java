@@ -67,6 +67,12 @@ public class CampusResource {
     @Column(name = "availability_duration_minutes")
     private Integer availabilityDurationMinutes;
 
+    @Column(name = "availability_start_time", length = 20)
+    private String availabilityStartTime;
+
+    @Column(name = "availability_end_time", length = 20)
+    private String availabilityEndTime;
+
         @ElementCollection(fetch = FetchType.EAGER)
         @CollectionTable(
             name = "campus_resource_features",
@@ -91,6 +97,8 @@ public class CampusResource {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (availabilityStartTime == null) availabilityStartTime = "08:00";
+        if (availabilityEndTime == null) availabilityEndTime = "18:00";
     }
 
     @PreUpdate

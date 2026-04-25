@@ -39,6 +39,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .capacity(request.getCapacity())
                 .location(request.getLocation())
                 .availabilityDurationMinutes(request.getAvailabilityDurationMinutes())
+                .availabilityStartTime(request.getAvailabilityStartTime())
+                .availabilityEndTime(request.getAvailabilityEndTime())
                 .features(normalizeFeatures(request.getFeatures()))
                 .status(request.getStatus() != null ? request.getStatus() : ResourceStatus.ACTIVE)
                 .build();
@@ -60,6 +62,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
         existing.setCapacity(request.getCapacity());
         existing.setLocation(request.getLocation());
         existing.setAvailabilityDurationMinutes(request.getAvailabilityDurationMinutes());
+        existing.setAvailabilityStartTime(request.getAvailabilityStartTime());
+        existing.setAvailabilityEndTime(request.getAvailabilityEndTime());
         existing.setFeatures(normalizeFeatures(request.getFeatures()));
         if (request.getStatus() != null) {
             existing.setStatus(request.getStatus());
@@ -133,6 +137,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .capacity(resource.getCapacity())
                 .location(resource.getLocation())
                 .availabilityDurationMinutes(resource.getAvailabilityDurationMinutes())
+                .availabilityStartTime(resource.getAvailabilityStartTime())
+                .availabilityEndTime(resource.getAvailabilityEndTime())
                 .features(resource.getFeatures())
                 .status(resource.getStatus())
                 .createdAt(resource.getCreatedAt())

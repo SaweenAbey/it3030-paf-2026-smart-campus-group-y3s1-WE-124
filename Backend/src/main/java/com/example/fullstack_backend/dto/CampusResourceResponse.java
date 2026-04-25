@@ -25,6 +25,8 @@ public class CampusResourceResponse {
     private Integer capacity;
     private String location;
     private Integer availabilityDurationMinutes;
+    private String availabilityStartTime;
+    private String availabilityEndTime;
     private Set<String> features;
     private ResourceStatus status;
     private LocalDateTime createdAt;

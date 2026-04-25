@@ -44,6 +44,9 @@ public class CampusResourceRequest {
     @Min(value = 1, message = "Availability duration must be at least 1 minute")
     private Integer availabilityDurationMinutes;
 
+    private String availabilityStartTime;
+    private String availabilityEndTime;
+
     private Set<String> features;
 
     private ResourceStatus status;
