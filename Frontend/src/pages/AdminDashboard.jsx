@@ -203,6 +203,24 @@ const AdminDashboard = () => {
       return;
     }
 
+    const sliitEmailRegex = /^it\d+@my\.sliit\.lk$/;
+    if (!sliitEmailRegex.test(createFormData.email)) {
+      toast.error('Email must be a valid IT number format (e.g., it23748330@my.sliit.lk)');
+      return;
+    }
+
+    const phoneRegex = /^[0-9]{10}$/;
+    if (createFormData.phoneNumber && !phoneRegex.test(createFormData.phoneNumber)) {
+      toast.error('Telephone number must be exactly 10 digits');
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(createFormData.password)) {
+      toast.error('Password must be at least 8 characters long and include uppercase, lowercase, number, and special character');
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {

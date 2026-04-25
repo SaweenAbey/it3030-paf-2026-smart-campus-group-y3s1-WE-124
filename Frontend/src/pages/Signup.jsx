@@ -72,6 +72,11 @@ const Signup = () => {
       toast.error('Please enter a valid email address');
       return false;
     }
+    const sliitEmailRegex = /^it\d+@my\.sliit\.lk$/;
+    if (!sliitEmailRegex.test(formData.email)) {
+      toast.error('Email must be a valid IT number format (e.g., it23748330@my.sliit.lk)');
+      return false;
+    }
     // Username is derived from email; still ensure it is usable
     if (!formData.username.trim()) {
       toast.error('Username is required');
@@ -81,9 +86,9 @@ const Signup = () => {
   };
 
   const validateStep3 = () => {
-    const phoneRegex = /^\+?[0-9]{8,15}$/;
+    const phoneRegex = /^[0-9]{10}$/;
     if (!formData.phoneNumber.trim() || !phoneRegex.test(formData.phoneNumber)) {
-      toast.error('Please enter a valid phone number (8-15 digits)');
+      toast.error('Telephone number must be exactly 10 digits');
       return false;
     }
     if (!formData.role) {
@@ -252,9 +257,14 @@ const Signup = () => {
       toast.error('Please enter a valid email address');
       return false;
     }
-    const phoneRegex = /^\+?[0-9]{8,15}$/;
+    const sliitEmailRegex = /^it\d+@my\.sliit\.lk$/;
+    if (!sliitEmailRegex.test(formData.email)) {
+      toast.error('Email must be a valid IT number format (e.g., it23748330@my.sliit.lk)');
+      return false;
+    }
+    const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(formData.phoneNumber)) {
-      toast.error('Phone number should contain 8-15 digits');
+      toast.error('Telephone number must be exactly 10 digits');
       return false;
     }
     if (!isPasswordValid(formData.password)) {

@@ -283,7 +283,7 @@ const ManagerDashboard = () => {
     setResourceImagePreview('');
   };
 
-  const handleResourceImageSelected = (e) => {
+  const handleResourceImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) {
       if (resourceImagePreview) {
@@ -338,6 +338,20 @@ const ManagerDashboard = () => {
         return false;
       }
     }
+
+    if (!resourceForm.availabilityStartTime) {
+      toast.error('Operation start time is required');
+      return false;
+    }
+    if (!resourceForm.availabilityEndTime) {
+      toast.error('Operation end time is required');
+      return false;
+    }
+    if (resourceForm.availabilityStartTime >= resourceForm.availabilityEndTime) {
+      toast.error('Operation end time must be after the start time');
+      return false;
+    }
+
     return true;
   };
 
@@ -934,312 +948,274 @@ const ManagerDashboard = () => {
               )}
             </div>
           )}
-              </div>
-
               {resourcePanelOpen && activeTab === 'resources' && (
-                <aside className="sticky top-6 h-fit overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-white/70 backdrop-blur-2xl shadow-[0_40px_80px_-24px_rgba(15,23,42,0.12)] animate-in slide-in-from-right-10 duration-500 flex flex-col">
-                  {/* Panel Header */}
-                  <div className="flex items-start justify-between border-b border-slate-100 p-8 bg-slate-50/40">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]"></span>
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-700/80">Console Registry</p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 sm:p-6 lg:p-8 animate-in fade-in duration-500">
+                  <div className="w-full max-w-6xl h-full max-h-[900px] overflow-hidden rounded-[3rem] border border-white/20 bg-white shadow-[0_40px_80px_-24px_rgba(15,23,42,0.3)] animate-in zoom-in-95 duration-500 flex flex-col">
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between border-b border-slate-100 p-8 sm:px-12 bg-slate-50/40">
+                      <div className="flex items-center gap-6">
+                        <div className="h-16 w-16 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
+                           <Plus className={`w-8 h-8 transition-transform duration-500 ${resourceForm.id ? 'rotate-45' : ''}`} />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.6)]"></span>
+                            <p className="text-xs font-black uppercase tracking-[0.3em] text-sky-700">Console Registry</p>
+                          </div>
+                          <h3 className="text-3xl font-black text-slate-900 tracking-tight">
+                            {resourceForm.id ? 'Modify Facility Configuration' : 'Initialize New Resource'}
+                          </h3>
+                        </div>
                       </div>
-                      <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                        {resourceForm.id ? 'Edit Resource' : 'Initialize Resource'}
-                      </h3>
-                      <p className="mt-1 text-[11px] text-slate-500 font-bold uppercase tracking-wider opacity-60">
-                        {resourceForm.id ? 'Modify existing facility data' : 'Define new campus facility'}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetResourceForm();
+                          setResourcePanelOpen(false);
+                        }}
+                        className="p-4 bg-white border border-slate-100 hover:shadow-xl hover:border-slate-200 rounded-2xl transition-all text-slate-400 hover:text-slate-900 group"
+                      >
+                        <Plus className="w-6 h-6 rotate-45 group-hover:scale-110 transition-transform" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        resetResourceForm();
-                        setResourcePanelOpen(false);
-                      }}
-                      className="p-2.5 bg-white border border-slate-100 hover:shadow-lg hover:border-slate-200 rounded-xl transition-all text-slate-400 hover:text-slate-900 group"
-                    >
-                      <Plus className="w-5 h-5 rotate-45 group-hover:scale-110 transition-transform" />
-                    </button>
-                  </div>
 
-                  <form onSubmit={handleResourceSubmit} className="max-h-[calc(100vh-280px)] space-y-10 overflow-y-auto p-8 scrollbar-hide">
-                    <div className="grid gap-10">
-                      {/* Section Title: Identity */}
-                      <div className="space-y-6">
-                        {/* Name Section */}
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                             <Type className="w-3.5 h-3.5 text-sky-600" />
-                             Resource Identity *
-                          </label>
-                          <input
-                            type="text"
-                            name="name"
-                            value={resourceForm.name}
-                            onChange={handleResourceFieldChange}
-                            placeholder="e.g. Main Auditorium A1"
-                            maxLength={150}
-                            className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4.5 text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all shadow-inner"
-                            disabled={resourceSaving}
-                          />
-                        </div>
-
-                        {/* Description */}
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                             <Layers className="w-3.5 h-3.5 text-slate-400" />
-                             Contextual Details
-                          </label>
-                          <textarea
-                            name="description"
-                            value={resourceForm.description}
-                            onChange={handleResourceFieldChange}
-                            rows={3}
-                            maxLength={500}
-                            placeholder="Describe the layout, purpose, or specialized equipment available..."
-                            className="w-full resize-none rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4.5 text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all shadow-inner"
-                            disabled={resourceSaving}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Image Upload */}
-                      <div className="space-y-4 p-8 bg-slate-50/80 rounded-[2.5rem] border-2 border-white/50 shadow-inner">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2">
-                           <ImageIcon className="w-3.5 h-3.5 text-indigo-600" />
-                           Visual Identification
-                        </label>
-                        <div className="relative group cursor-pointer">
-                           <input
-                             type="file"
-                             accept="image/*"
-                             onChange={handleResourceImageSelected}
-                             className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
-                             disabled={resourceSaving}
-                           />
-                           <div className="w-full aspect-video rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center bg-white group-hover:border-sky-300 group-hover:bg-sky-50/30 transition-all overflow-hidden shadow-sm">
-                              {resourceImagePreview ? (
-                                <img
-                                  src={resourceImagePreview}
-                                  alt="Preview"
-                                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                />
-                              ) : (
-                                <>
-                                  <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-white transition-all shadow-inner">
-                                    <Upload className="w-7 h-7 text-slate-300 group-hover:text-sky-500" />
-                                  </div>
-                                  <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Select Photograph</p>
-                                  <p className="text-[9px] text-slate-400 uppercase mt-2 tracking-[0.15em] font-black opacity-50">1920x1080 Highly Recommended</p>
-                                </>
-                              )}
-                           </div>
-                        </div>
-                      </div>
-
-                      <div className="grid gap-10">
-                        <div className="grid gap-8 sm:grid-cols-2">
-                          {/* Type Selection */}
-                          <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                               <Zap className="w-3.5 h-3.5 text-amber-600" />
-                               Classification *
-                            </label>
-                            <div className="relative">
-                              <select
-                                name="type"
-                                value={resourceForm.type}
-                                onChange={handleResourceFieldChange}
-                                className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all appearance-none shadow-inner"
-                                disabled={resourceSaving}
-                              >
-                                <option value="">Select Category</option>
-                                {RESOURCE_TYPES.map((type) => (
-                                  <option key={type.value} value={type.value}>{type.label}</option>
-                                ))}
-                              </select>
-                              <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
-                                 <Plus className="w-4 h-4 rotate-45" />
-                              </div>
+                    <form onSubmit={handleResourceSubmit} className="flex-1 overflow-y-auto p-8 sm:p-12 scrollbar-hide">
+                      <div className="grid lg:grid-cols-2 gap-12 sm:gap-16">
+                        {/* Left Column: Primary Identity & Visuals */}
+                        <div className="space-y-12">
+                          <div className="space-y-8">
+                            <div className="flex items-center gap-3">
+                               <div className="h-8 w-1 bg-sky-500 rounded-full" />
+                               <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">Resource Identity</h4>
                             </div>
-                          </div>
-
-                          {/* Capacity */}
-                          <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                               <Users className="w-3.5 h-3.5 text-emerald-600" />
-                               Max Capacity *
-                            </label>
-                            <input
-                              type="number"
-                              name="capacity"
-                              min="1"
-                              value={resourceForm.capacity}
-                              onChange={handleResourceFieldChange}
-                              placeholder="e.g. 150"
-                              className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all shadow-inner"
-                              disabled={resourceSaving}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Location */}
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                             <MapPin className="w-3.5 h-3.5 text-rose-600" />
-                             Campus Location *
-                          </label>
-                          <input
-                            type="text"
-                            name="location"
-                            value={resourceForm.location}
-                            onChange={handleResourceFieldChange}
-                            placeholder="e.g. Innovation Hub, Block C, Room 402"
-                            maxLength={255}
-                            className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all shadow-inner"
-                            disabled={resourceSaving}
-                          />
-                        </div>
-
-                        <div className="grid gap-8 sm:grid-cols-2">
-                          {/* Status */}
-                          <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                               <Search className="w-3.5 h-3.5 text-indigo-500" />
-                               Availability Status
-                            </label>
-                            <div className="relative">
-                              <select
-                                name="status"
-                                value={resourceForm.status}
-                                onChange={handleResourceFieldChange}
-                                className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all appearance-none shadow-inner"
-                                disabled={resourceSaving}
-                              >
-                                {RESOURCE_STATUSES.map((status) => (
-                                  <option key={status.value} value={status.value}>{status.label}</option>
-                                ))}
-                              </select>
-                              <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
-                                 <Plus className="w-4 h-4 rotate-45" />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Duration */}
-                          <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                               <Clock className="w-3.5 h-3.5 text-violet-600" />
-                               Session Limit
-                            </label>
-                            <div className="relative">
+                            
+                            <div className="space-y-4">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                                 <Type className="w-3.5 h-3.5 text-sky-600" />
+                                 Formal Name *
+                              </label>
                               <input
-                                type="number"
-                                name="availabilityDurationMinutes"
-                                min="1"
-                                value={resourceForm.availabilityDurationMinutes}
+                                type="text"
+                                name="name"
+                                value={resourceForm.name}
                                 onChange={handleResourceFieldChange}
-                                placeholder="120"
-                                className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-6 py-4.5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all pr-14 shadow-inner"
-                                disabled={resourceSaving}
+                                placeholder="e.g. Grand Auditorium Hall"
+                                className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-8 py-5 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all"
                               />
-                              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[9px] font-black text-slate-400 uppercase tracking-widest bg-white/50 px-2 py-1 rounded-lg">MIN</span>
                             </div>
+
+                            <div className="space-y-4">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                                 <Layers className="w-3.5 h-3.5 text-slate-400" />
+                                 Facility Description
+                              </label>
+                              <textarea
+                                name="description"
+                                value={resourceForm.description}
+                                onChange={handleResourceFieldChange}
+                                rows={4}
+                                placeholder="Detail the layout, specialized equipment, or unique features..."
+                                className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-8 py-5 text-base font-bold text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all resize-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-8">
+                             <div className="flex items-center gap-3">
+                                <div className="h-8 w-1 bg-violet-500 rounded-full" />
+                                <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">Visual Identification</h4>
+                             </div>
+                             
+                             <div className="p-8 rounded-[2.5rem] bg-slate-50/50 border-2 border-dashed border-slate-200 text-center relative group overflow-hidden">
+                                {resourceImagePreview ? (
+                                  <div className="relative aspect-video rounded-2xl overflow-hidden shadow-2xl">
+                                    <img src={resourceImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                       <button type="button" onClick={() => setResourceImagePreview(null)} className="p-4 bg-white/20 backdrop-blur-md rounded-2xl text-white hover:bg-rose-500 transition-all">
+                                          <Plus className="w-6 h-6 rotate-45" />
+                                       </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="py-10">
+                                    <div className="w-20 h-20 bg-white rounded-3xl shadow-xl border border-slate-100 flex items-center justify-center mx-auto mb-6 text-slate-300 group-hover:text-sky-500 group-hover:scale-110 transition-all duration-500">
+                                       <Plus className="w-10 h-10" />
+                                    </div>
+                                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest">Upload Resource Asset</p>
+                                    <p className="text-[10px] text-slate-300 mt-2 font-bold uppercase">PNG, JPG up to 10MB</p>
+                                    <input 
+                                       type="file" 
+                                       className="absolute inset-0 opacity-0 cursor-pointer" 
+                                       onChange={handleResourceImageChange}
+                                       accept="image/*"
+                                    />
+                                  </div>
+                                )}
+                             </div>
                           </div>
                         </div>
 
-                        {/* Availability Time Slots */}
-                        <div className="grid gap-8 sm:grid-cols-2 p-8 bg-slate-50/50 rounded-[2.5rem] border-2 border-white/50">
-                          <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2 ml-1">
-                               <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                               Operation Start
-                            </label>
-                            <input
-                              type="time"
-                              name="availabilityStartTime"
-                              value={resourceForm.availabilityStartTime}
-                              onChange={handleResourceFieldChange}
-                              className="w-full rounded-2xl border-2 border-white bg-white/80 px-6 py-4 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all shadow-sm"
-                              disabled={resourceSaving}
-                            />
+                        {/* Right Column: Logistics & Metadata */}
+                        <div className="space-y-12">
+                          <div className="space-y-8">
+                            <div className="flex items-center gap-3">
+                               <div className="h-8 w-1 bg-emerald-500 rounded-full" />
+                               <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">Operational Logistics</h4>
+                            </div>
+
+                            <div className="grid sm:grid-cols-2 gap-6">
+                              <div className="space-y-4">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                   <Zap className="w-3.5 h-3.5 text-sky-500" /> Facility Type
+                                </label>
+                                <select
+                                  name="type"
+                                  value={resourceForm.type}
+                                  onChange={handleResourceFieldChange}
+                                  className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-8 py-5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none transition-all appearance-none"
+                                >
+                                  {RESOURCE_TYPES.map((type) => (
+                                    <option key={type.value} value={type.value}>{type.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="space-y-4">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                   <Users className="w-3.5 h-3.5 text-rose-500" /> Max Capacity
+                                </label>
+                                <input
+                                  type="number"
+                                  name="capacity"
+                                  value={resourceForm.capacity}
+                                  onChange={handleResourceFieldChange}
+                                  placeholder="0"
+                                  className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-8 py-5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none transition-all shadow-inner"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-4">
+                              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
+                                 <MapPin className="w-3.5 h-3.5 text-sky-600" /> Strategic Location
+                              </label>
+                              <input
+                                type="text"
+                                name="location"
+                                value={resourceForm.location}
+                                onChange={handleResourceFieldChange}
+                                placeholder="e.g. Academic Block, Level 3"
+                                className="w-full rounded-2xl border-2 border-slate-50 bg-slate-50/50 px-8 py-5 text-base font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none transition-all shadow-inner"
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2 ml-1">
-                               <Clock className="w-3.5 h-3.5 text-rose-600" />
-                               Operation End
-                            </label>
-                            <input
-                              type="time"
-                              name="availabilityEndTime"
-                              value={resourceForm.availabilityEndTime}
-                              onChange={handleResourceFieldChange}
-                              className="w-full rounded-2xl border-2 border-white bg-white/80 px-6 py-4 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all shadow-sm"
-                              disabled={resourceSaving}
-                            />
+
+                          <div className="space-y-8">
+                             <div className="flex items-center gap-3">
+                                <div className="h-8 w-1 bg-amber-500 rounded-full" />
+                                <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">Access Control & Schedule</h4>
+                             </div>
+
+                             <div className="p-10 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                                   <Clock className="w-32 h-32" />
+                                </div>
+                                <div className="grid sm:grid-cols-2 gap-8 relative z-10">
+                                   <div className="space-y-4">
+                                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Opening Hours
+                                      </label>
+                                      <input
+                                        type="time"
+                                        name="availabilityStartTime"
+                                        value={resourceForm.availabilityStartTime}
+                                        onChange={handleResourceFieldChange}
+                                        className="w-full rounded-2xl border-2 border-white/10 bg-white/5 px-6 py-4 text-base font-black text-white focus:bg-white/10 focus:border-emerald-400 focus:outline-none transition-all"
+                                      />
+                                   </div>
+                                   <div className="space-y-4">
+                                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                         <span className="w-2 h-2 rounded-full bg-rose-400" /> Closing Hours
+                                      </label>
+                                      <input
+                                        type="time"
+                                        name="availabilityEndTime"
+                                        value={resourceForm.availabilityEndTime}
+                                        onChange={handleResourceFieldChange}
+                                        className="w-full rounded-2xl border-2 border-white/10 bg-white/5 px-6 py-4 text-base font-black text-white focus:bg-white/10 focus:border-rose-400 focus:outline-none transition-all"
+                                      />
+                                   </div>
+                                </div>
+                                <div className="mt-10 pt-8 border-t border-white/10 flex items-center justify-between">
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Resource Availability Policy</p>
+                                   <div className="flex items-center gap-2">
+                                      <span className="text-xs font-black text-emerald-400 uppercase">Always Governed</span>
+                                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                   </div>
+                                </div>
+                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Features */}
-                      <div className="space-y-6">
-                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                            <Zap className="w-3.5 h-3.5 text-amber-500" />
-                            Premium Amenities
-                         </label>
-                         <div className="flex flex-wrap gap-3">
+                      {/* Amenities Section - Full Width */}
+                      <div className="mt-16 space-y-8">
+                         <div className="flex items-center gap-3">
+                            <div className="h-8 w-1 bg-indigo-500 rounded-full" />
+                            <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">Premium Features & Amenities</h4>
+                         </div>
+                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                             {RESOURCE_FEATURE_OPTIONS.map((feature) => (
                                <button
                                  key={feature}
                                  type="button"
                                  onClick={() => toggleResourceFeature(feature)}
-                                 className={`px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all duration-300 ${
+                                 className={`p-6 rounded-[2rem] text-[10px] font-black uppercase tracking-widest border-2 transition-all duration-300 text-center flex flex-col items-center gap-3 ${
                                    resourceForm.features.includes(feature)
-                                    ? 'bg-slate-900 border-slate-900 text-white shadow-xl shadow-slate-200 -translate-y-1'
-                                    : 'bg-white border-slate-50 text-slate-400 hover:border-slate-200 hover:text-slate-600 hover:bg-slate-50'
+                                    ? 'bg-slate-900 border-slate-900 text-white shadow-2xl shadow-slate-300 scale-105'
+                                    : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50'
                                  }`}
                                >
+                                  <Zap className={`w-5 h-5 ${resourceForm.features.includes(feature) ? 'text-amber-400' : 'text-slate-200'}`} />
                                   {feature}
                                </button>
                             ))}
                          </div>
                       </div>
-                    </div>
+                    </form>
 
-                    {/* Bottom Actions - Removed Sticky */}
-                    <div className="flex gap-4 mt-12 px-2 pb-4">
-                       <button
-                         type="button"
-                         onClick={() => {
-                           resetResourceForm();
-                           setResourcePanelOpen(false);
-                         }}
-                         className="flex-1 px-8 py-5 bg-slate-100 text-slate-500 font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-slate-200 hover:text-slate-800 transition-all"
-                       >
-                         Discard
-                       </button>
-                       <button
-                         type="submit"
-                         disabled={resourceSaving}
-                         className="flex-[2.5] px-8 py-5 bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-slate-200 hover:shadow-sky-100 hover:bg-sky-600 disabled:opacity-50 transition-all flex items-center justify-center gap-3 group"
-                       >
-                          {resourceSaving ? (
-                             <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          ) : (
-                             <>
-                               <span>{resourceForm.id ? 'Deploy the Resource' : 'Create Resource'}</span>
-                               <Plus className="w-4 h-4 group-hover:scale-125 transition-transform" />
-                             </>
-                          )}
-                       </button>
+                    {/* Modal Footer */}
+                    <div className="p-8 sm:px-12 border-t border-slate-100 bg-slate-50/80 flex gap-6">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetResourceForm();
+                          setResourcePanelOpen(false);
+                        }}
+                        className="px-12 py-6 bg-white border-2 border-slate-100 text-slate-400 font-black text-xs uppercase tracking-[0.2em] rounded-[2rem] hover:bg-slate-50 hover:text-slate-900 hover:border-slate-200 transition-all flex-1"
+                      >
+                        Discard Changes
+                      </button>
+                      <button
+                        onClick={handleResourceSubmit}
+                        disabled={resourceSaving}
+                        className="px-12 py-6 bg-slate-900 text-white font-black text-xs uppercase tracking-[0.2em] rounded-[2rem] shadow-2xl shadow-slate-200 hover:shadow-sky-100 hover:bg-sky-600 disabled:opacity-50 transition-all flex-[2.5] flex items-center justify-center gap-4 group"
+                      >
+                        {resourceSaving ? (
+                           <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                           <>
+                             <span className="tracking-[0.3em]">{resourceForm.id ? 'Authorize Deployment' : 'Finalize Initialization'}</span>
+                             <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
+                           </>
+                        )}
+                      </button>
                     </div>
-                  </form>
-                </aside>
+                  </div>
+                </div>
               )}
             </div>
-          </section>
+          </div>
+        </section>
 
 
       {/* Add Maintenance Modal */}
