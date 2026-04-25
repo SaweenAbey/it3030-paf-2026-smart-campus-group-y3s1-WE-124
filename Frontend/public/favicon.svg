@@ -1,0 +1,29 @@
+<svg width="220" height="64" viewBox="0 0 220 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="UNI 360">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="220" y2="64" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0C4A6E"/>
+      <stop offset="1" stop-color="#38BDF8"/>
+    </linearGradient>
+    <filter id="s" x="-20%" y="-40%" width="140%" height="180%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0EA5E9" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Mark -->
+  <g filter="url(#s)">
+    <rect x="4" y="6" width="52" height="52" rx="16" fill="url(#g)"/>
+    <path d="M22 22v22c0 2.8 2.2 5 5 5h6c2.8 0 5-2.2 5-5V22" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <path d="M22 22c0-4.4 3.6-8 8-8h5c4.4 0 8 3.6 8 8" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="36" cy="22" r="2.5" fill="white" opacity="0.9"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g fill="#0F172A">
+    <path d="M77 44V20h6.8v17.9c0 3.9 2.3 6.1 6.2 6.1s6.2-2.2 6.2-6.1V20H103v24h-6.5v-3.2c-1.8 2.4-4.8 3.8-8.8 3.8-6.5 0-10.7-3.9-10.7-10.6Z"/>
+    <path d="M109.2 44V20h6.7v24h-6.7Z"/>
+    <path d="M122.6 44V20h6.4v3.3c1.8-2.4 4.9-3.9 9-3.9 6.8 0 11.1 4.3 11.1 11.3V44h-6.8V31.6c0-3.8-2.2-6.1-6.3-6.1s-6.5 2.4-6.5 6.4V44h-6.9Z"/>
+    <path d="M165.8 44.6c-6.6 0-11-3.1-11.8-8.2h6.9c.6 2.2 2.5 3.4 5.2 3.4 3.2 0 5.2-1.5 5.2-3.8 0-2.5-2.2-3.4-6.1-4.2-5.6-1.1-10.4-2.7-10.4-8.2 0-5 4.3-8.3 11.1-8.3 6.3 0 10.6 3.1 11.5 8.3h-6.7c-.6-2.3-2.4-3.5-5-3.5-3 0-4.7 1.4-4.7 3.4 0 2.3 2.3 3 6.4 3.8 5.6 1.1 10.2 2.8 10.2 8.6 0 5.1-4.5 8.7-11.8 8.7Z"/>
+    <path d="M195.1 44.6c-7.4 0-12.6-5.2-12.6-12.6 0-7.4 5.2-12.6 12.6-12.6 7.4 0 12.6 5.2 12.6 12.6 0 7.4-5.2 12.6-12.6 12.6Zm0-5.7c3.6 0 5.9-2.7 5.9-6.9 0-4.2-2.3-6.9-5.9-6.9-3.6 0-5.9 2.7-5.9 6.9 0 4.2 2.3 6.9 5.9 6.9Z"/>
+  </g>
+</svg>
+
