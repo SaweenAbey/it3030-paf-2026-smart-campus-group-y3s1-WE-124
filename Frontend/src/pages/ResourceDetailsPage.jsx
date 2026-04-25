@@ -366,9 +366,19 @@ export default function ResourceDetailsPage() {
                 <span className="px-3 py-1 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg">
                   {resource.type?.replace(/_/g, ' ')}
                 </span>
-                <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg border border-emerald-100">
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Live Now</span>
+                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg border ${
+                  resource.status === 'ACTIVE' 
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                    : resource.status === 'OUT_OF_STOCK'
+                      ? 'bg-amber-50 text-amber-600 border-amber-100'
+                      : 'bg-rose-50 text-rose-600 border-rose-100'
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                    resource.status === 'ACTIVE' ? 'bg-emerald-500' : resource.status === 'OUT_OF_STOCK' ? 'bg-amber-500' : 'bg-rose-500'
+                  }`} />
+                  <span className="text-[9px] font-black uppercase tracking-widest">
+                    {resource.status === 'ACTIVE' ? 'Live Now' : resource.status?.replace(/_/g, ' ')}
+                  </span>
                 </div>
               </div>
 
@@ -576,8 +586,12 @@ export default function ResourceDetailsPage() {
                         <Zap className="w-8 h-8 text-rose-500" />
                       </div>
                       <div className="space-y-2">
-                        <h3 className="text-lg font-black text-slate-900">Currently Offline</h3>
-                        <p className="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-widest">Maintenance Mode Active</p>
+                        <h3 className="text-lg font-black text-slate-900">
+                          {resource.status === 'OUT_OF_STOCK' ? 'Out of Stock' : 'Currently Offline'}
+                        </h3>
+                        <p className="text-[10px] text-slate-500 font-bold leading-relaxed uppercase tracking-widest">
+                          {resource.status === 'OUT_OF_STOCK' ? 'Inventory depleted' : 'Maintenance Mode Active'}
+                        </p>
                       </div>
                       <button
                         onClick={() => navigate('/bookings')}

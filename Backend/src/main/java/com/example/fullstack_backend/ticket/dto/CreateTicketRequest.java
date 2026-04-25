@@ -20,11 +20,11 @@ import lombok.NoArgsConstructor;
 public class CreateTicketRequest {
 
     @NotBlank(message = "Title is required")
-    @Size(max = 180, message = "Title cannot exceed 180 characters")
+    @Size(min = 5, max = 180, message = "Title must be between 5 and 180 characters")
     private String title;
 
     @NotBlank(message = "Description is required")
-    @Size(max = 3000, message = "Description cannot exceed 3000 characters")
+    @Size(min = 20, max = 3000, message = "Description must be between 20 and 3000 characters")
     private String description;
 
     @NotNull(message = "Category is required")
@@ -35,6 +35,7 @@ public class CreateTicketRequest {
 
     private TicketPriority priority;
 
-    @Size(max = 3, message = "You can attach up to 3 evidence images")
+    @NotNull(message = "Attachments are required")
+    @Size(min = 1, max = 3, message = "You must provide between 1 and 3 evidence images")
     private List<@NotBlank(message = "Attachment URL cannot be blank") String> attachmentUrls;
 }

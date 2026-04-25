@@ -42,6 +42,12 @@ const Support = () => {
                 {isAuthenticated() ? 'Write a Review' : 'Sign In to Add Review'}
               </Link>
               <Link
+                to="/reviews"
+                className="rounded-2xl border border-white/35 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/20"
+              >
+                View All Reviews
+              </Link>
+              <Link
                 to="/"
                 className="rounded-2xl border border-white/35 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/20"
               >

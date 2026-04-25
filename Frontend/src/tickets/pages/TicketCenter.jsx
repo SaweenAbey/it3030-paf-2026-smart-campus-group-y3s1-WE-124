@@ -23,6 +23,7 @@ const TicketCenter = ({ compact = false }) => {
   const [acceptanceNote, setAcceptanceNote] = useState('');
   const [assignAssigneeId, setAssignAssigneeId] = useState('');
   const [assignDetails, setAssignDetails] = useState('');
+  const [selectedResourceStatus, setSelectedResourceStatus] = useState('');
   const [staff, setStaff] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -84,6 +85,7 @@ const TicketCenter = ({ compact = false }) => {
     setAcceptanceNote('');
     setAssignAssigneeId(selectedTicket?.assignedToId ? String(selectedTicket.assignedToId) : '');
     setAssignDetails('');
+    setSelectedResourceStatus('');
   }, [selectedTicketId]);
 
   const onCreated = (newTicket) => {
@@ -94,7 +96,10 @@ const TicketCenter = ({ compact = false }) => {
   const onAssign = async (ticketId, assigneeId, details = '') => {
     if (!assigneeId) return;
     try {
-      await ticketApi.assignTicket(ticketId, Number(assigneeId));
+      await ticketApi.assignTicket(ticketId, { 
+        assigneeId: Number(assigneeId),
+        resourceStatus: selectedResourceStatus || null
+      });
       if (details.trim()) {
         await ticketApi.addComment(ticketId, `Admin assignment details: ${details.trim()}`);
       }
@@ -106,9 +111,9 @@ const TicketCenter = ({ compact = false }) => {
     }
   };
 
-  const onUpdateStatus = async (ticketId, status, resolutionNotes = '') => {
+  const onUpdateStatus = async (ticketId, status, resolutionNotes = '', resourceStatus = null) => {
     try {
-      await ticketApi.updateStatus(ticketId, { status, resolutionNotes });
+      await ticketApi.updateStatus(ticketId, { status, resolutionNotes, resourceStatus });
       await loadTickets();
       toast.success('Ticket status updated');
     } catch (error) {
@@ -214,7 +219,7 @@ const TicketCenter = ({ compact = false }) => {
       resolutionNotes = statusMessage;
     }
 
-    await onUpdateStatus(selectedTicket.id, selectedStatus, resolutionNotes);
+    await onUpdateStatus(selectedTicket.id, selectedStatus, resolutionNotes, selectedResourceStatus || null);
     setSelectedStatus('');
     setStatusMessage('');
   };
@@ -344,6 +349,21 @@ const TicketCenter = ({ compact = false }) => {
                           rows={2}
                           placeholder="Add assignment request details for technician"
                         />
+                        {selectedTicket.category === 'RESOURCE' && (
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-slate-500">Resource Status Update (Optional)</p>
+                            <select
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                              value={selectedResourceStatus}
+                              onChange={(e) => setSelectedResourceStatus(e.target.value)}
+                            >
+                              <option value="">No change</option>
+                              <option value="ACTIVE">ACTIVE</option>
+                              <option value="OUT_OF_SERVICE">OUT_OF_SERVICE</option>
+                              <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
+                            </select>
+                          </div>
+                        )}
                         <button
                           onClick={() => onAssign(selectedTicket.id, assignAssigneeId, assignDetails)}
                           disabled={!assignAssigneeId}
@@ -413,6 +433,23 @@ const TicketCenter = ({ compact = false }) => {
                           Apply Status
                         </button>
                       </div>
+
+                      {isAdmin && selectedTicket.category === 'RESOURCE' && (
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs font-semibold text-slate-500">Resource Status Update (Optional)</p>
+                          <select
+                            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            value={selectedResourceStatus}
+                            onChange={(e) => setSelectedResourceStatus(e.target.value)}
+                          >
+                            <option value="">No change</option>
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="OUT_OF_SERVICE">OUT_OF_SERVICE</option>
+                            <option value="OUT_OF_STOCK">OUT_OF_STOCK</option>
+                          </select>
+                        </div>
+                      )}
+
                       {(selectedStatus === 'RESOLVED' || selectedStatus === 'REJECTED') && (
                         <div className="mt-2">
                           <p className="mb-1 text-xs font-medium text-slate-600">

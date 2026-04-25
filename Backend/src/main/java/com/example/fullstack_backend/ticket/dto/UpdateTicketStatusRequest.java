@@ -1,5 +1,6 @@
 package com.example.fullstack_backend.ticket.dto;
 
+import com.example.fullstack_backend.model.ResourceStatus;
 import com.example.fullstack_backend.ticket.model.TicketStatus;
 
 import jakarta.validation.constraints.NotNull;
@@ -18,4 +19,6 @@ public class UpdateTicketStatusRequest {
 
     @Size(max = 3000, message = "Resolution notes cannot exceed 3000 characters")
     private String resolutionNotes;
+
+    private ResourceStatus resourceStatus;
 }

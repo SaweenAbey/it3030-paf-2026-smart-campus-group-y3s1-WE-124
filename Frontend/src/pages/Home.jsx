@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ScrollBasedVelocity } from '@/components/ui/scroll-based-velocity';
 import { reviewAPI } from '../services/api';
@@ -584,6 +585,15 @@ const Home = () => {
                 })}
               </div>
             )}
+          </div>
+          <div className="mt-12 text-center">
+            <Link 
+              to="/reviews" 
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-8 py-4 text-sm font-black text-white transition hover:bg-sky-600 hover:shadow-xl hover:shadow-sky-100"
+            >
+              <span>Explore All Verified Reviews</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </section>
