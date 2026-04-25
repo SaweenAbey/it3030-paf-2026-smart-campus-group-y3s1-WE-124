@@ -170,14 +170,6 @@ const Services = () => {
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white/80 px-4 py-10 backdrop-blur sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img src={uni360Logo} alt="UNI 360" className="h-9 w-auto" draggable="false" />
-          </div>
-          <p className="text-sm text-slate-500">© 2026 UNI 360 Smart University Operations Hub</p>
-        </div>
-      </footer>
     </div>
   );
 };

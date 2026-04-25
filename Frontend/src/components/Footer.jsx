@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, Linkedin, ExternalLink } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, ExternalLink, Shield, Zap, Layout } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 const Footer = () => {
@@ -57,7 +57,7 @@ const Footer = () => {
               The unified operating system for modern campus intelligence. Managing spaces, resources, and incidents with real-time clarity.
             </p>
             <div className="flex gap-4">
-              {[Facebook, Twitter, Instagram, Linkedin].map((Icon, idx) => (
+              {[Globe, Shield, Zap, Layout].map((Icon, idx) => (
                 <a key={idx} href="#" className="w-9 h-9 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center hover:bg-sky-500 hover:text-white hover:border-sky-400 transition-all active:scale-90">
                   <Icon className="w-4 h-4" />
                 </a>
