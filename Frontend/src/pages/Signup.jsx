@@ -754,6 +754,14 @@ const Signup = () => {
                 Sign in
               </Link>
             </p>
+
+            <p className="mt-6 text-center text-[10px] leading-relaxed text-slate-400">
+              By creating an account, you agree to the UNI360{' '}
+              <Link to="/terms" className="font-bold text-slate-500 underline transition hover:text-sky-600">
+                Terms & Conditions
+              </Link>{' '}
+              and Privacy Policy.
+            </p>
           </div>
         </section>
       </div>

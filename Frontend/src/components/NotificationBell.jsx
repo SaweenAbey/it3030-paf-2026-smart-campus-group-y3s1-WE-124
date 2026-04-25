@@ -102,10 +102,13 @@ const NotificationBell = () => {
     refreshUnreadCount();
     const id = window.setInterval(() => {
       refreshUnreadCount();
-    }, 15000);
+      if (open) {
+        refreshList();
+      }
+    }, 1000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [open]);
 
   // Instant updates when admin sends notifications (same tab + other tabs).
   useEffect(() => {
