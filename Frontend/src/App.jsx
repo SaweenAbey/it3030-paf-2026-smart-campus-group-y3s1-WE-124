@@ -257,7 +257,7 @@ function AppContent() {
           }
         />
         <Route
-          path="/adminlog"
+          path="/admin-login"
           element={
             <PublicRoute>
               <AdminLogin />

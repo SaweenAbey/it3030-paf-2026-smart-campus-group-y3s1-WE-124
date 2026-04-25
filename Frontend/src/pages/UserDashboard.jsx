@@ -594,7 +594,7 @@ const UserDashboard = () => {
 
       <main className="mx-auto mt-4 w-full lg:hidden">
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <nav className="grid grid-cols-3 gap-2">
+          <nav className="grid grid-cols-5 gap-2">
             {TABS.map((tab) => {
               const selected = activeTab === tab.key;
               const TabIcon = tab.icon;
@@ -602,12 +602,12 @@ const UserDashboard = () => {
                 <button
                   key={tab.key}
                   onClick={() => onSelectTab(tab.key)}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-xs font-semibold ${
+                  className={`flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[9px] font-bold ${
                     selected ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600'
                   }`}
                 >
-                  <TabIcon size={16} />
-                  <span>{tab.label}</span>
+                  <TabIcon size={14} />
+                  <span className="truncate w-full text-center">{tab.label}</span>
                 </button>
               );
             })}

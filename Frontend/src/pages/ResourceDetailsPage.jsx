@@ -559,7 +559,7 @@ export default function ResourceDetailsPage() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-2 h-64 overflow-y-auto pr-2 scrollbar-hide border-y border-slate-50 py-4">
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 h-64 overflow-y-auto pr-2 scrollbar-hide border-y border-slate-50 py-4">
                           {GENERATE_SLOTS(resource?.availabilityDurationMinutes || 30).map((time) => {
                             const isBooked = isSlotBooked(time);
                             const isSelected = selectedSlots.includes(time);
