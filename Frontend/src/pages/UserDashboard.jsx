@@ -43,6 +43,15 @@ const UserDashboard = () => {
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [bookingError, setBookingError] = useState('');
 
+  const userInitials = useMemo(() => {
+    return (user?.name || user?.username || 'U')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(p => p[0]?.toUpperCase())
+      .join('');
+  }, [user]);
+
   const bookingStats = useMemo(() => {
     const total = bookings.length;
     const approved = bookings.filter((item) => item.status === 'APPROVED').length;
@@ -351,97 +360,119 @@ const UserDashboard = () => {
     </div>
   );
 
-  const renderProfile = () => (
-    <div className="space-y-7">
-      <header>
-        <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
-          Security and Identity
-        </span>
-        <h2 className="mt-3 text-4xl font-black text-slate-900">Personal Profile</h2>
-        <p className="mt-2 text-lg text-slate-500">Manage your digital campus identity and preferences</p>
-      </header>
+  const renderProfile = () => {
+    return (
+      <div className="space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <header>
+          <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-1 text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+            Security and Identity
+          </span>
+          <h2 className="mt-3 text-4xl font-black text-slate-900 tracking-tight">Personal Profile</h2>
+          <p className="mt-2 text-lg font-bold text-slate-400">Manage your digital campus identity and preferences</p>
+        </header>
 
-      <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-5 shadow-sm md:p-8">
-        <div className="grid items-start gap-6 lg:grid-cols-[240px_1fr]">
-          <div className="relative rounded-3xl bg-linear-to-br from-blue-500 to-blue-600 p-6 text-center text-white shadow-xl">
-            <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-3xl border border-white/40 bg-white/10 text-6xl font-bold shadow-inner">
-              {(user?.name || 'U')
-                .split(' ')
-                .slice(0, 2)
-                .map((part) => part[0])
-                .join('')
-                .toUpperCase()}
-            </div>
-            <span className="absolute -bottom-3 -right-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl border-4 border-white bg-emerald-500 text-white shadow-lg">
-              <BadgeCheck size={24} />
-            </span>
-          </div>
-
-          <div className="space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-emerald-600">
-                <ShieldCheck size={14} /> Active
-              </span>
-              <button className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg transition hover:bg-slate-700">
-                <PencilLine size={20} />
-              </button>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Institutional Role</p>
-                <p className="mt-3 flex items-center gap-2 text-lg font-bold text-slate-800">
-                  <CircleUserRound size={18} className="text-blue-500" />
-                  {user?.role || 'STUDENT'}
-                </p>
+        <div className="rounded-[3rem] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/50 md:p-10">
+          <div className="grid items-center gap-10 lg:grid-cols-[280px_1fr]">
+            <div className="relative group">
+              <div className="relative rounded-[2.5rem] bg-linear-to-br from-blue-600 to-indigo-700 p-8 text-center text-white shadow-2xl overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.2),transparent_50%)]" />
+                <div className="relative z-10 mx-auto flex h-40 w-40 items-center justify-center rounded-[2rem] border border-white/30 bg-white/10 text-6xl font-black shadow-inner overflow-hidden">
+                  {user?.profileImageUrl ? (
+                    <img 
+                      src={user.profileImageUrl} 
+                      alt={user.name} 
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <span className="drop-shadow-lg">{userInitials}</span>
+                  )}
+                </div>
+                <div className="mt-6 relative z-10">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100">Status</p>
+                  <p className="text-sm font-black mt-1">Verified Member</p>
+                </div>
               </div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Reference ID</p>
-                <p className="mt-3 flex items-center gap-2 text-lg font-bold text-slate-800">
-                  <IdCard size={18} className="text-blue-500" />
-                  {(user?.username || 'IT-3030').toUpperCase()}-2026
-                </p>
-              </div>
+              <span className="absolute -bottom-4 -right-4 inline-flex h-16 w-16 items-center justify-center rounded-[1.5rem] border-8 border-white bg-emerald-500 text-white shadow-xl transition-transform hover:scale-110">
+                <BadgeCheck size={32} strokeWidth={2.5} />
+              </span>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                <CalendarDays size={15} className="text-blue-500" /> Member since 2024
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                <ShieldCheck size={15} className="text-blue-500" /> Identity Verified
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-semibold text-slate-700">
-                <BarChart3 size={15} className="text-blue-500" /> Full Resource Access
-              </span>
+            <div className="space-y-8">
+              <div className="flex flex-wrap items-center justify-between gap-6">
+                <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-emerald-600 shadow-sm">
+                  <ShieldCheck size={16} /> 
+                  Account Active
+                </div>
+                <div className="flex gap-3">
+                  <button className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg transition hover:bg-blue-600 hover:-translate-y-1">
+                    <PencilLine size={20} />
+                  </button>
+                  <button className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-slate-100 bg-white text-slate-400 transition hover:border-blue-200 hover:text-blue-600">
+                    <LogOut size={20} onClick={onLogout} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-6 transition hover:border-blue-100">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Institutional Role</p>
+                  <p className="mt-3 flex items-center gap-3 text-xl font-black text-slate-900">
+                    <CircleUserRound size={22} className="text-blue-500" />
+                    {user?.role || 'STUDENT'}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-6 transition hover:border-blue-100">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Reference ID</p>
+                  <p className="mt-3 flex items-center gap-3 text-xl font-black text-slate-900">
+                    <IdCard size={22} className="text-blue-500" />
+                    {(user?.username || 'IT-0000').toUpperCase()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { 
+                    icon: CalendarDays, 
+                    text: `Member since ${user?.createdAt ? new Date(user.createdAt).getFullYear() : '2024'}` 
+                  },
+                  { icon: ShieldCheck, text: 'Identity Verified' },
+                  { icon: BarChart3, text: 'Full Resource Access' }
+                ].map((tag, i) => (
+                  <span key={i} className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 bg-white px-5 py-3 text-xs font-bold text-slate-700 shadow-sm transition hover:shadow-md">
+                    <tag.icon size={16} className="text-blue-500" /> 
+                    {tag.text}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {[
+            { label: 'Full Display Name', value: user?.name, icon: UserRound },
+            { label: 'Institutional Email', value: user?.email, icon: Mail },
+            { label: 'System Username', value: user?.username, icon: CircleUserRound },
+            { label: 'Access Level', value: user?.role, icon: ShieldCheck },
+          ].map((field, i) => (
+            <div key={i} className="rounded-[2rem] border border-slate-200/60 bg-white p-7 shadow-sm transition hover:shadow-md group">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{field.label}</p>
+                  <p className="mt-2 text-lg font-black text-slate-900">{field.value || 'Not provided'}</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                  <field.icon size={18} />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Full Name</p>
-          <p className="mt-1 font-semibold text-slate-800">{user?.name || 'Not provided'}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Username</p>
-          <p className="mt-1 font-semibold text-slate-800">{user?.username || 'Not provided'}</p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Email</p>
-          <p className="mt-1 flex items-center gap-2 font-semibold text-slate-800">
-            <Mail size={16} className="text-blue-500" />
-            {user?.email || 'Not provided'}
-          </p>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Role</p>
-          <p className="mt-1 font-semibold text-slate-800">{user?.role || 'STUDENT'}</p>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderSettings = () => (
     <div className="space-y-5">
@@ -503,17 +534,21 @@ const UserDashboard = () => {
           {!sidebarCollapsed && (
             <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-100 p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-xl font-bold text-white">
-                  {(user?.name || 'US')
-                    .split(' ')
-                    .slice(0, 2)
-                    .map((part) => part[0])
-                    .join('')
-                    .toUpperCase()}
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-xl font-bold text-white overflow-hidden shadow-md">
+                  {user?.profileImageUrl ? (
+                    <img 
+                      src={user.profileImageUrl} 
+                      alt={user.name} 
+                      className="h-full w-full object-cover" 
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    userInitials
+                  )}
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-slate-900">Student</p>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-500">Online</p>
+                  <p className="text-xl font-black text-slate-900 leading-tight">Student</p>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-emerald-500">Live Session</p>
                 </div>
               </div>
             </div>

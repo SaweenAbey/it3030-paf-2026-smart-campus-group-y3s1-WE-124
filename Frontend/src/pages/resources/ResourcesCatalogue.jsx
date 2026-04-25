@@ -33,6 +33,7 @@ const RESOURCE_TYPES = [
 const RESOURCE_STATUSES = [
   { value: 'ACTIVE', label: 'Active' },
   { value: 'OUT_OF_SERVICE', label: 'Out of service' },
+  { value: 'OUT_OF_STOCK', label: 'Out of stock' },
 ];
 
 const ResourcesCatalogue = () => {
@@ -665,10 +666,12 @@ const ResourcesCatalogue = () => {
                       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider backdrop-blur-md shadow-sm ${
                         r.status === 'ACTIVE' 
                           ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' 
-                          : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
+                          : r.status === 'OUT_OF_STOCK'
+                            ? 'bg-amber-500/10 text-amber-600 border border-amber-500/20'
+                            : 'bg-rose-500/10 text-rose-600 border border-rose-500/20'
                       }`}
                     >
-                      <span className={`h-1.5 w-1.5 rounded-full ${r.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                      <span className={`h-1.5 w-1.5 rounded-full ${r.status === 'ACTIVE' ? 'bg-emerald-500' : r.status === 'OUT_OF_STOCK' ? 'bg-amber-500' : 'bg-rose-500'}`}></span>
                       {r.status?.replace(/_/g, ' ') || '—'}
                     </span>
                   </div>

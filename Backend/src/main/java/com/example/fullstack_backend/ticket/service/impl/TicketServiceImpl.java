@@ -27,6 +27,10 @@ import com.example.fullstack_backend.ticket.model.TicketPriority;
 import com.example.fullstack_backend.ticket.model.TicketStatus;
 import com.example.fullstack_backend.ticket.repository.TicketCommentRepository;
 import com.example.fullstack_backend.ticket.repository.TicketRepository;
+import com.example.fullstack_backend.repository.CampusResourceRepository;
+import com.example.fullstack_backend.model.CampusResource;
+import com.example.fullstack_backend.model.ResourceStatus;
+import com.example.fullstack_backend.ticket.model.TicketCategory;
 import com.example.fullstack_backend.ticket.service.TicketService;
 
 import lombok.RequiredArgsConstructor;
@@ -39,6 +43,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final TicketCommentRepository ticketCommentRepository;
     private final UserRepository userRepository;
+    private final CampusResourceRepository resourceRepository;
 
     @Override
     public TicketResponse createTicket(CreateTicketRequest request, String actorUsername) {
@@ -54,20 +59,22 @@ public class TicketServiceImpl implements TicketService {
                 .raisedBy(actor)
                 .build();
 
-        if (request.getAttachmentUrls() != null) {
-            if (request.getAttachmentUrls().size() > 3) {
-                throw new IllegalArgumentException("A ticket can include up to 3 image attachments");
-            }
-            request.getAttachmentUrls().stream()
-                    .map(String::trim)
-                    .filter(url -> !url.isBlank())
-                    .forEach(url -> ticket.getAttachments().add(
-                            TicketAttachment.builder()
-                                    .ticket(ticket)
-                                    .imageUrl(url)
-                                    .build()
-                    ));
+        if (request.getAttachmentUrls() == null || request.getAttachmentUrls().isEmpty()) {
+            throw new IllegalArgumentException("At least one evidence image is required");
         }
+        if (request.getAttachmentUrls().size() > 3) {
+            throw new IllegalArgumentException("A ticket can include up to 3 image attachments");
+        }
+
+        request.getAttachmentUrls().stream()
+                .map(String::trim)
+                .filter(url -> !url.isBlank())
+                .forEach(url -> ticket.getAttachments().add(
+                        TicketAttachment.builder()
+                                .ticket(ticket)
+                                .imageUrl(url)
+                                .build()
+                ));
 
         Ticket saved = ticketRepository.save(ticket);
         return toResponse(saved);
@@ -147,6 +154,10 @@ public class TicketServiceImpl implements TicketService {
         ticket.setAssignedTo(assignee);
         ticket.setReviewedBy(reviewer);
 
+        if (request.getResourceStatus() != null) {
+            updateRelatedResourceStatus(ticket, request.getResourceStatus());
+        }
+
         return toResponse(ticketRepository.save(ticket));
     }
 
@@ -177,6 +188,11 @@ public class TicketServiceImpl implements TicketService {
         }
 
         ticket.setStatus(nextStatus);
+
+        if (request.getResourceStatus() != null) {
+            updateRelatedResourceStatus(ticket, request.getResourceStatus());
+        }
+
         return toResponse(ticketRepository.save(ticket));
     }
 
@@ -327,6 +343,20 @@ public class TicketServiceImpl implements TicketService {
     private Ticket getTicketOrThrow(Long ticketId) {
         return ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
+    }
+
+    private void updateRelatedResourceStatus(Ticket ticket, ResourceStatus newStatus) {
+        if (ticket.getCategory() == TicketCategory.RESOURCE && ticket.getReferenceId() != null) {
+            try {
+                Long resourceId = Long.parseLong(ticket.getReferenceId());
+                CampusResource resource = resourceRepository.findById(resourceId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Resource not found for ticket: " + resourceId));
+                resource.setStatus(newStatus);
+                resourceRepository.save(resource);
+            } catch (NumberFormatException e) {
+                // referenceId is not a valid Long, ignore or handle as needed
+            }
+        }
     }
 
     private User getUserByUsername(String username) {

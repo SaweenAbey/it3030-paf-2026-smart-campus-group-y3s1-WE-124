@@ -20,6 +20,7 @@ import NotificationCreate from './pages/NotificationCreate';
 import Services from './pages/Services';
 import ResourcesCatalogue from './pages/resources/ResourcesCatalogue';
 import Support from './pages/Support';
+import ReviewsPage from './pages/ReviewsPage';
 import ReviewSubmitPage from './pages/ReviewSubmitPage';
 import ReviewSubmittedPage from './pages/ReviewSubmittedPage';
 import ChatbotFloatingButton from './chatbot/ChatbotFloatingButton';
@@ -200,6 +201,10 @@ function AppContent() {
               <ManagerDashboard />
             </ManagerProtectedRoute>
           }
+        />
+        <Route
+          path="/reviews"
+          element={<ReviewsPage />}
         />
         <Route
           path="/notifications/create"

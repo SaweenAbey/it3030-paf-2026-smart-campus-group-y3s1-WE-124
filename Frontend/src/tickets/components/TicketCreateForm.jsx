@@ -35,28 +35,38 @@ const TicketCreateForm = ({ onCreated }) => {
     }
   }, [category, loadAvailableResources]);
 
-  const handleResourceSelect = async (event) => {
+  const handleResourceSelect = (event) => {
     const resourceId = event.target.value;
     setSelectedResourceId(resourceId);
     setReferenceId(resourceId);
-
-    if (!resourceId) return;
-
-    try {
-      // Mark resource as out of service
-      await api.patch(`/resources/${resourceId}/status`, { status: 'OUT_OF_SERVICE' });
-      toast.success('Resource marked as out of service');
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update resource status');
-    }
   };
 
   const onFileSelect = (event) => {
     const selected = Array.from(event.target.files || []);
+    
     if (selected.length > 3) {
       toast.error('Maximum 3 attachments allowed');
+      event.target.value = ''; // Reset input
+      setFiles([]);
       return;
     }
+
+    // Validate file types and sizes (e.g., max 5MB per image)
+    for (const file of selected) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`File "${file.name}" is not an image`);
+        event.target.value = '';
+        setFiles([]);
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`File "${file.name}" exceeds 5MB limit`);
+        event.target.value = '';
+        setFiles([]);
+        return;
+      }
+    }
+    
     setFiles(selected);
   };
 
@@ -73,13 +83,23 @@ const TicketCreateForm = ({ onCreated }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!title.trim() || !description.trim()) {
-      toast.error('Title and description are required');
+    if (!title.trim() || title.trim().length < 5) {
+      toast.error('Title must be at least 5 characters');
+      return;
+    }
+
+    if (!description.trim() || description.trim().length < 20) {
+      toast.error('Description must be at least 20 characters');
       return;
     }
 
     if (category === 'RESOURCE' && !selectedResourceId) {
       toast.error('Please select a resource');
+      return;
+    }
+
+    if (files.length === 0) {
+      toast.error('Please attach at least 1 evidence image (max 3)');
       return;
     }
 
