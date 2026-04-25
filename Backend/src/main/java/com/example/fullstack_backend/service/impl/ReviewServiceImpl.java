@@ -58,6 +58,14 @@ public class ReviewServiceImpl implements ReviewService {
                 .toList();
     }
 
+    @Override
+    public List<ReviewResponse> getAllReviews() {
+        return reviewRepository.findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private ReviewResponse toResponse(Review review) {
         User user = review.getUser();
 

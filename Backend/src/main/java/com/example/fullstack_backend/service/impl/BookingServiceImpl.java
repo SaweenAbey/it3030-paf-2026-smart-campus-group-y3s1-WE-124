@@ -160,7 +160,7 @@ public class BookingServiceImpl implements BookingService {
             
             // Get the recipient user by username
             userRepository.findByUsername(booking.getUserId())
-                    .ifPresent(user -> notificationService.createForUser(user.getId(), "SYSTEM", notificationRequest));
+                    .ifPresent(user -> notificationService.createForUser(user.getId(), null, notificationRequest));
         } catch (Exception e) {
             // Log but don't fail the approval if notification fails
             System.err.println("Failed to send approval notification: " + e.getMessage());
@@ -195,7 +195,7 @@ public class BookingServiceImpl implements BookingService {
             
             // Get the recipient user by username
             userRepository.findByUsername(booking.getUserId())
-                    .ifPresent(user -> notificationService.createForUser(user.getId(), "SYSTEM", notificationRequest));
+                    .ifPresent(user -> notificationService.createForUser(user.getId(), null, notificationRequest));
         } catch (Exception e) {
             // Log but don't fail the rejection if notification fails
             System.err.println("Failed to send rejection notification: " + e.getMessage());

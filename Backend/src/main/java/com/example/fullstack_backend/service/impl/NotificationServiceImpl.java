@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 
 import com.example.fullstack_backend.dto.AudienceNotificationRequest;
 import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
@@ -35,6 +36,7 @@ public class NotificationServiceImpl implements NotificationService {
     private UserRepository userRepository;
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public NotificationResponse createForUser(Long recipientUserId, String creatorUsername, CreateNotificationRequest request) {
         User recipient = userRepository.findById(recipientUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Recipient user not found with id: " + recipientUserId));
@@ -57,6 +59,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<NotificationResponse> createForRole(Role role, String creatorUsername, BroadcastNotificationRequest request) {
         List<User> recipients = userRepository.findByRoleAndIsActive(role, true);
         if (recipients.isEmpty()) {
@@ -83,6 +86,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<NotificationResponse> createForAllUsers(String creatorUsername, BroadcastNotificationRequest request) {
         List<User> recipients = userRepository.findByIsActive(true);
         if (recipients.isEmpty()) {
@@ -109,6 +113,7 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<NotificationResponse> createByAudience(String creatorUsername, AudienceNotificationRequest request) {
         List<User> recipients = null;
 

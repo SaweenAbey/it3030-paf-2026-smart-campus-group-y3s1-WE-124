@@ -121,6 +121,7 @@ export const reviewAPI = {
   getPublicReviews: (limit = 6) => api.get('/reviews/public', { params: { limit } }),
   createReview: (data) => api.post('/reviews', data),
   getMyReviews: () => api.get('/reviews/my'),
+  getAllReviews: () => api.get('/reviews/all'),
 };
 
 // Chatbot API calls
