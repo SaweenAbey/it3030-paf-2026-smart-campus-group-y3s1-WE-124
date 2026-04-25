@@ -43,4 +43,9 @@ public class ReviewController {
     public ResponseEntity<List<ReviewResponse>> getPublicReviews(@RequestParam(defaultValue = "6") int limit) {
         return ResponseEntity.ok(reviewService.getPublicReviews(limit));
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ReviewResponse>> getAllReviews() {
+        return ResponseEntity.ok(reviewService.getAllReviews());
+    }
 }

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { resourceAPI, bookingAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateBookingReceipt } from '../utils/receiptGenerator';
 import {
   ArrowLeft,
   Users,
@@ -20,7 +21,9 @@ import {
   Heart,
   Share2,
   Lock,
-  ChevronLeft
+  ChevronLeft,
+  Download,
+  PartyPopper
 } from 'lucide-react';
 
 const RESOURCE_FEATURES = {
@@ -84,6 +87,8 @@ export default function ResourceDetailsPage() {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(Math.floor(Math.random() * 50) + 12);
   const [selectedSlots, setSelectedSlots] = useState([]);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [lastBooking, setLastBooking] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -296,9 +301,10 @@ export default function ResourceDetailsPage() {
         expectedAttendees: bookingForm.expectedAttendees ? parseInt(bookingForm.expectedAttendees) : 1,
       };
 
-      await bookingAPI.createBooking(payload);
+      const response = await bookingAPI.createBooking(payload);
+      setLastBooking(response.data);
+      setShowSuccess(true);
       toast.success('Request submitted for approval');
-      setTimeout(() => navigate('/bookings'), 1500);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to book');
     } finally {
@@ -323,6 +329,54 @@ export default function ResourceDetailsPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] pb-20">
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              className="bg-white rounded-[3rem] p-8 lg:p-12 max-w-lg w-full shadow-2xl text-center relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-sky-400 via-indigo-500 to-sky-400" />
+              
+              <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <PartyPopper className="w-10 h-10 text-emerald-500" />
+              </div>
+              
+              <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Booking Requested!</h2>
+              <p className="text-slate-500 font-bold text-sm leading-relaxed mb-10 max-w-xs mx-auto uppercase tracking-widest">
+                Your reservation for <span className="text-sky-600">{resource.name}</span> has been logged and is pending approval.
+              </p>
+
+              <div className="space-y-4">
+                <button
+                  onClick={() => generateBookingReceipt(lastBooking || bookingForm, resource, user)}
+                  className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+                >
+                  <Download className="w-4 h-4" />
+                  Download Receipt
+                </button>
+                <button
+                  onClick={() => navigate('/bookings')}
+                  className="w-full py-5 bg-white border border-slate-100 text-slate-400 hover:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all"
+                >
+                  Return to Bookings
+                </button>
+              </div>
+
+              <p className="mt-8 text-[10px] font-black text-slate-300 uppercase tracking-widest">
+                Verification ID: {lastBooking?.id || 'PENDING'}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main className="max-w-7xl mx-auto px-6 pt-12 lg:pt-16">
 
         {/* Back navigation */}
@@ -607,24 +661,6 @@ export default function ResourceDetailsPage() {
           </div>
         </div>
       </main>
-
-      <footer className="max-w-7xl mx-auto px-6 py-20 border-t border-slate-100 mt-20">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black italic text-lg shadow-lg">U</div>
-            <div>
-              <span className="text-[11px] font-black tracking-tight text-slate-900 uppercase tracking-widest block">UNI360 Operations</span>
-              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Campus Command Center</span>
-            </div>
-          </div>
-          <div className="flex gap-8">
-            {['Policy', 'Support', 'Terms'].map(t => (
-              <button key={t} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors">{t}</button>
-            ))}
-          </div>
-          <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">© 2026 Smart University Systems</p>
-        </div>
-      </footer>
     </div>
   );
 }

@@ -34,6 +34,9 @@ import com.example.fullstack_backend.security.JwtUtil;
 import com.example.fullstack_backend.service.EmailOtpService;
 import com.example.fullstack_backend.service.GoogleTokenVerifierService;
 import com.example.fullstack_backend.service.UserService;
+import com.example.fullstack_backend.service.NotificationService;
+import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
+import com.example.fullstack_backend.model.NotificationType;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 
 @Service
@@ -61,6 +64,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private GoogleTokenVerifierService googleTokenVerifierService;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -135,6 +141,19 @@ public class UserServiceImpl implements UserService {
             }
         } else {
             message = "User registered successfully";
+        }
+
+        // Notify Admins about new registration
+        try {
+            BroadcastNotificationRequest adminNotif = BroadcastNotificationRequest.builder()
+                    .title("👤 New Registration Request")
+                    .message("User " + savedUser.getName() + " (" + savedUser.getUsername() + ") has registered as a " + savedUser.getRole() + ". Approval may be required.")
+                    .type(NotificationType.INFO)
+                    .actionUrl("/admin/dashboard?tab=users")
+                    .build();
+            notificationService.createForRole(Role.ADMIN, savedUser.getUsername(), adminNotif);
+        } catch (Exception e) {
+            logger.warn("Failed to send admin notification for registration: {}", e.getMessage());
         }
 
         return AuthResponse.builder()
@@ -389,6 +408,19 @@ public class UserServiceImpl implements UserService {
         String token = jwtUtil.generateToken(user);
         logger.info("OTP verified. Login completed for user: {}", user.getUsername());
 
+        // Notify Admins about user login
+        try {
+            BroadcastNotificationRequest adminNotif = BroadcastNotificationRequest.builder()
+                    .title("🔑 User Logged In")
+                    .message(user.getName() + " (" + user.getUsername() + ") has logged into the system.")
+                    .type(NotificationType.INFO)
+                    .actionUrl("/admin/dashboard?tab=overview")
+                    .build();
+            notificationService.createForRole(Role.ADMIN, user.getUsername(), adminNotif);
+        } catch (Exception e) {
+            logger.warn("Failed to send admin notification for login: {}", e.getMessage());
+        }
+
         return AuthResponse.builder()
                 .token(token)
                 .tokenType("Bearer")
@@ -434,6 +466,19 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(user);
 
         String token = jwtUtil.generateToken(savedUser);
+
+        // Notify Admins about Google login
+        try {
+            BroadcastNotificationRequest adminNotif = BroadcastNotificationRequest.builder()
+                    .title("🔑 Google Login")
+                    .message(savedUser.getName() + " (" + savedUser.getUsername() + ") logged in via Google.")
+                    .type(NotificationType.INFO)
+                    .actionUrl("/admin/dashboard?tab=overview")
+                    .build();
+            notificationService.createForRole(Role.ADMIN, savedUser.getUsername(), adminNotif);
+        } catch (Exception e) {
+            logger.warn("Failed to send admin notification for Google login: {}", e.getMessage());
+        }
 
         return AuthResponse.builder()
                 .token(token)
@@ -560,6 +605,21 @@ public class UserServiceImpl implements UserService {
         
         userRepository.updateActiveStatus(id, isActive);
         logger.info("User {} status updated to: {}", user.getUsername(), isActive);
+
+        // If approved, notify the user
+        if (Boolean.TRUE.equals(isActive)) {
+            try {
+                BroadcastNotificationRequest userNotif = BroadcastNotificationRequest.builder()
+                        .title("✅ Account Approved")
+                        .message("Your account has been approved by the administration. You can now access all platform features.")
+                        .type(NotificationType.SUCCESS)
+                        .actionUrl("/login")
+                        .build();
+                notificationService.createForUser(user.getUsername(), "SYSTEM", userNotif);
+            } catch (Exception e) {
+                logger.warn("Failed to send user notification for approval: {}", e.getMessage());
+            }
+        }
     }
 
     @Override

@@ -5,6 +5,7 @@ const API_BASE_URL = 'http://localhost:8080/api';
 // Create axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -48,6 +49,7 @@ export const authAPI = {
   googleAuth: (payload) => api.post('/auth/google', payload),
   register: (userData) => api.post('/auth/register', userData),
   validateToken: () => api.get('/auth/validate'),
+  logout: () => api.post('/auth/logout'),
 };
 
 // User API calls
@@ -121,6 +123,7 @@ export const reviewAPI = {
   getPublicReviews: (limit = 6) => api.get('/reviews/public', { params: { limit } }),
   createReview: (data) => api.post('/reviews', data),
   getMyReviews: () => api.get('/reviews/my'),
+  getAllReviews: () => api.get('/reviews/all'),
 };
 
 // Chatbot API calls

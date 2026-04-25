@@ -4,6 +4,7 @@ import './App.css';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
@@ -25,6 +26,7 @@ import ReviewSubmitPage from './pages/ReviewSubmitPage';
 import ReviewSubmittedPage from './pages/ReviewSubmittedPage';
 import ChatbotFloatingButton from './chatbot/ChatbotFloatingButton';
 import TicketCenter from './tickets/pages/TicketCenter';
+import TermsAndConditions from './pages/TermsAndConditions';
 
 const getDefaultRouteByRole = (role) => {
   const normalizedRole = (role || '').toUpperCase();
@@ -278,9 +280,15 @@ function AppContent() {
             </PublicRoute>
           }
         />
+        <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <ChatbotFloatingButton />
+      {!hideNavbar && (
+        <div className="relative z-50">
+          <Footer />
+        </div>
+      )}
     </div>
   );
 }

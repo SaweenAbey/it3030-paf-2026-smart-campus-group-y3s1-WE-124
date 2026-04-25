@@ -5,22 +5,28 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, [token]);
+    const initAuth = async () => {
+      try {
+        const response = await userAPI.getCurrentUser();
+        setUser(response.data);
+      } catch (error) {
+        console.log('No active session found via cookies');
+        localStorage.removeItem('user');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
 
   const persistAuthSession = (authPayload) => {
-    const { token: authToken, ...userData } = authPayload;
-    localStorage.setItem('token', authToken);
+    const { token: _, ...userData } = authPayload;
     localStorage.setItem('user', JSON.stringify(userData));
-    setToken(authToken);
     setUser(userData);
   };
 
@@ -49,15 +55,19 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout API failed:', error);
+    } finally {
+      localStorage.removeItem('user');
+      setUser(null);
+    }
   };
 
   const isAuthenticated = () => {
-    return !!token && !!user;
+    return !!user;
   };
 
   const updateUserProfileImage = async (imageUrl) => {
@@ -98,7 +108,6 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
-        token,
         loading,
         login,
         verifyLoginOtp,

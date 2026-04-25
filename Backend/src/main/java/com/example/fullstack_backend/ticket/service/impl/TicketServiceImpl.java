@@ -32,6 +32,10 @@ import com.example.fullstack_backend.model.CampusResource;
 import com.example.fullstack_backend.model.ResourceStatus;
 import com.example.fullstack_backend.ticket.model.TicketCategory;
 import com.example.fullstack_backend.ticket.service.TicketService;
+import com.example.fullstack_backend.service.NotificationService;
+import com.example.fullstack_backend.dto.CreateNotificationRequest;
+import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
+import com.example.fullstack_backend.model.NotificationType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -44,6 +48,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketCommentRepository ticketCommentRepository;
     private final UserRepository userRepository;
     private final CampusResourceRepository resourceRepository;
+    private final NotificationService notificationService;
 
     @Override
     public TicketResponse createTicket(CreateTicketRequest request, String actorUsername) {
@@ -77,6 +82,20 @@ public class TicketServiceImpl implements TicketService {
                 ));
 
         Ticket saved = ticketRepository.save(ticket);
+
+        // Notify Admins about new ticket
+        try {
+            BroadcastNotificationRequest notif = BroadcastNotificationRequest.builder()
+                    .title("🎫 New Ticket: " + saved.getTitle())
+                    .message("A new ticket has been raised by " + actor.getName() + " (" + actor.getUsername() + "). Priority: " + saved.getPriority())
+                    .type(NotificationType.INFO)
+                    .actionUrl("/admin/dashboard?tab=incidents")
+                    .build();
+            notificationService.createForRole(Role.ADMIN, actorUsername, notif);
+        } catch (Exception e) {
+            // Log but don't fail
+        }
+
         return toResponse(saved);
     }
 
@@ -158,7 +177,20 @@ public class TicketServiceImpl implements TicketService {
             updateRelatedResourceStatus(ticket, request.getResourceStatus());
         }
 
-        return toResponse(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        // Notify Assignee
+        try {
+            CreateNotificationRequest notif = CreateNotificationRequest.builder()
+                    .title("🛠️ Ticket Assigned to You")
+                    .message("Ticket #" + saved.getId() + " (" + saved.getTitle() + ") has been assigned to you by " + reviewer.getName())
+                    .type(NotificationType.INFO)
+                    .actionUrl("/technician/dashboard")
+                    .build();
+            notificationService.createForUser(assignee.getId(), actorUsername, notif);
+        } catch (Exception e) {}
+
+        return toResponse(saved);
     }
 
     @Override
@@ -193,7 +225,22 @@ public class TicketServiceImpl implements TicketService {
             updateRelatedResourceStatus(ticket, request.getResourceStatus());
         }
 
-        return toResponse(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        // Notify Reporter about status change
+        try {
+            if (saved.getRaisedBy() != null) {
+                CreateNotificationRequest notif = CreateNotificationRequest.builder()
+                        .title("📢 Ticket Status Updated")
+                        .message("Your ticket #" + saved.getId() + " is now " + saved.getStatus())
+                        .type(nextStatus == TicketStatus.RESOLVED ? NotificationType.SUCCESS : NotificationType.INFO)
+                        .actionUrl("/support")
+                        .build();
+                notificationService.createForUser(saved.getRaisedBy().getId(), actorUsername, notif);
+            }
+        } catch (Exception e) {}
+
+        return toResponse(saved);
     }
 
     @Override
@@ -212,7 +259,22 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.REJECTED);
         ticket.setRejectionReason(request.getReason().trim());
 
-        return toResponse(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        // Notify Reporter about rejection
+        try {
+            if (saved.getRaisedBy() != null) {
+                CreateNotificationRequest notif = CreateNotificationRequest.builder()
+                        .title("❌ Ticket Rejected")
+                        .message("Your ticket #" + saved.getId() + " has been rejected. Reason: " + saved.getRejectionReason())
+                        .type(NotificationType.WARNING)
+                        .actionUrl("/support")
+                        .build();
+                notificationService.createForUser(saved.getRaisedBy().getId(), actorUsername, notif);
+            }
+        } catch (Exception e) {}
+
+        return toResponse(saved);
     }
 
     @Override
@@ -238,7 +300,31 @@ public class TicketServiceImpl implements TicketService {
                 .content(request.getContent().trim())
                 .build();
 
-        return toCommentResponse(ticketCommentRepository.save(comment));
+        TicketComment saved = ticketCommentRepository.save(comment);
+
+        // Notify the other party
+        try {
+            User recipient = null;
+            if (actorUsername.equals(ticket.getRaisedBy().getUsername())) {
+                // Reporter commented, notify assignee
+                recipient = ticket.getAssignedTo();
+            } else {
+                // Staff commented, notify reporter
+                recipient = ticket.getRaisedBy();
+            }
+
+            if (recipient != null) {
+                CreateNotificationRequest notif = CreateNotificationRequest.builder()
+                        .title("💬 New Comment on Ticket")
+                        .message("New comment on #" + ticket.getId() + " from " + actor.getName())
+                        .type(NotificationType.INFO)
+                        .actionUrl(recipient.getRole() == Role.STUDENT ? "/support" : "/technician/dashboard")
+                        .build();
+                notificationService.createForUser(recipient.getId(), actorUsername, notif);
+            }
+        } catch (Exception e) {}
+
+        return toCommentResponse(saved);
     }
 
     @Override

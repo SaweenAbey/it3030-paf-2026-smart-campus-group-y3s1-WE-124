@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { adminAPI, notificationAPI, userAPI } from '../services/api';
+import { adminAPI, notificationAPI, userAPI, reviewAPI } from '../services/api';
 import AdminSkyStatusButton from '../components/AdminSkyStatusButton';
 import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
 import TicketCenter from '../tickets/pages/TicketCenter';
-import { Users, Zap, Clock, Search, ChevronRight, LayoutGrid } from 'lucide-react';
+import { Users, Zap, Clock, Search, ChevronRight, LayoutGrid, Star, MessageSquare, Quote } from 'lucide-react';
 
 const ROLE_FILTER_OPTIONS = [
   { value: 'ALL', label: 'All roles' },
@@ -124,6 +124,9 @@ const AdminDashboard = () => {
     recipientRole: 'ALL',
   });
 
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -140,6 +143,19 @@ const AdminDashboard = () => {
     }
   }, []);
 
+  const loadReviews = useCallback(async () => {
+    setReviewsLoading(true);
+    try {
+      const res = await reviewAPI.getAllReviews();
+      setReviews(res.data || []);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to load reviews');
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (user && user.role !== 'ADMIN') {
       toast.error('Access denied: Admin only');
@@ -153,10 +169,13 @@ const AdminDashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'notifications') {
+    if (activeTab === 'notifications' || activeTab === 'overview') {
       loadAdminNotificationsLight();
     }
-  }, [activeTab, loadAdminNotificationsLight]);
+    if (activeTab === 'reviews') {
+      loadReviews();
+    }
+  }, [activeTab, loadAdminNotificationsLight, loadReviews]);
 
   const loadUsers = async () => {
     setLoading(true);
@@ -564,6 +583,21 @@ const AdminDashboard = () => {
     }
   };
 
+  const formatTimeAgo = (dateStr) => {
+    if (!dateStr) return 'Unknown time';
+    const now = new Date();
+    const past = new Date(dateStr);
+    const diffInMs = now - past;
+    const diffInMins = Math.floor(diffInMs / 60000);
+    const diffInHours = Math.floor(diffInMins / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMins < 1) return 'Just now';
+    if (diffInMins < 60) return `${diffInMins}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    return `${diffInDays}d ago`;
+  };
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#f8fafc_100%)]">
       <main className="mx-auto max-w-360 px-4 py-6 sm:px-6 lg:px-8">
@@ -652,28 +686,43 @@ const AdminDashboard = () => {
                        </div>
 
                        {/* Recent Approvals / Tasks */}
-                       <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
-                          <h3 className="text-xl font-black text-slate-900 tracking-tight mb-6">Critical System Feed</h3>
-                          <div className="space-y-4">
-                             {[
-                               { type: 'USER', msg: 'New Tutor Application: Dr. Aris Thorne', time: '2m ago', color: 'sky' },
-                               { type: 'ALERT', msg: 'High Server Latency in US-East Node', time: '15m ago', color: 'rose' },
-                               { type: 'SYSTEM', msg: 'Daily Automated Database Backup Success', time: '1h ago', color: 'emerald' },
-                               { type: 'SEC', msg: 'Failed Admin Login Attempt (IP: 192.168.1.1)', time: '3h ago', color: 'indigo' },
-                             ].map((feed, i) => (
-                               <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent hover:border-slate-100">
-                                  <div className="flex items-center gap-4">
-                                     <div className={`w-2 h-2 rounded-full bg-${feed.color}-500 shadow-[0_0_10px_rgba(0,0,0,0.1)] shadow-${feed.color}-200`} />
-                                     <div>
-                                        <p className="text-sm font-black text-slate-900">{feed.msg}</p>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{feed.type} • {feed.time}</p>
-                                     </div>
-                                  </div>
-                                  <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
-                               </div>
-                             ))}
-                          </div>
-                       </div>
+                        <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                           <h3 className="text-xl font-black text-slate-900 tracking-tight mb-6">Critical System Feed</h3>
+                           <div className="space-y-4">
+                              {notifLoading ? (
+                                <div className="flex flex-col items-center justify-center py-12 gap-2 opacity-50">
+                                   <div className="w-5 h-5 border-2 border-slate-300 border-t-slate-900 animate-spin rounded-full" />
+                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing feed...</p>
+                                </div>
+                              ) : adminNotifications.length === 0 ? (
+                                <div className="py-12 text-center opacity-50">
+                                   <p className="text-sm font-medium text-slate-500 italic">System quiet. No new updates.</p>
+                                </div>
+                              ) : (
+                                adminNotifications.slice(0, 6).map((notif, i) => {
+                                  let color = 'sky';
+                                  if (notif.type === 'ERROR') color = 'rose';
+                                  if (notif.type === 'SUCCESS') color = 'emerald';
+                                  if (notif.type === 'WARNING') color = 'amber';
+
+                                  return (
+                                    <div key={notif.id || i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent hover:border-slate-100">
+                                       <div className="flex items-center gap-4">
+                                          <div className={`w-2.5 h-2.5 rounded-full bg-${color}-500 shadow-[0_0_12px_rgba(0,0,0,0.1)]`} />
+                                          <div>
+                                             <p className="text-sm font-black text-slate-900 leading-tight">{notif.title}</p>
+                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                                               {notif.type} • {formatTimeAgo(notif.createdAt)}
+                                             </p>
+                                          </div>
+                                       </div>
+                                       <ChevronRight className="w-4 h-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                                    </div>
+                                  );
+                                })
+                              )}
+                           </div>
+                        </div>
                     </div>
 
                     <div className="space-y-6">
@@ -730,29 +779,6 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            <section className="rounded-4xl border border-slate-200/70 bg-white p-6 shadow-[0_20px_60px_-32px_rgba(15,23,42,0.25)] sm:p-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-700">Administration Console</p>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                Campus Operations Command Center
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                Manage user lifecycle, operational notifications, service requests, bookings, and reviews from a single governed workspace.
-              </p>
-
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {stats.map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
-                  >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{item.label}</p>
-                    <p className={`mt-2 inline-flex rounded-xl bg-white px-3 py-2 text-2xl font-semibold text-slate-900 ring-1 ring-slate-200`}>
-                      {item.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
 
             {activeTab === 'users' && (
               <div className="rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
@@ -1480,12 +1506,102 @@ const AdminDashboard = () => {
             )}
 
             {activeTab === 'reviews' && (
-              <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)]">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">Quality Review</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">Reviews</h2>
-                <p className="mt-1 text-sm text-slate-500">View feedback analytics and service quality reviews.</p>
-                <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-600">
-                  Professional reviews section created. Plug in review metrics and moderation features here.
+              <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)] sm:p-8">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">Quality Assurance</p>
+                      <h2 className="mt-2 text-2xl font-bold text-slate-900">User Reviews & Feedback</h2>
+                      <p className="mt-1 text-sm text-slate-500">Monitor platform sentiment and service quality metrics.</p>
+                    </div>
+                    <div className="flex items-center gap-3 rounded-2xl bg-sky-50 px-4 py-3 border border-sky-100">
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold text-sky-700 uppercase tracking-tight">Average Rating</span>
+                        <span className="text-xl font-black text-slate-900">
+                          {(reviews.reduce((acc, curr) => acc + curr.rating, 0) / (reviews.length || 1)).toFixed(1)} / 5.0
+                        </span>
+                      </div>
+                      <div className="h-8 w-px bg-sky-200 mx-1" />
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className={`w-4 h-4 ${
+                              s <= Math.round(reviews.reduce((acc, curr) => acc + curr.rating, 0) / (reviews.length || 1))
+                                ? 'fill-sky-500 text-sky-500'
+                                : 'text-slate-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 space-y-4">
+                    {reviewsLoading ? (
+                      <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-600 border-t-transparent" />
+                          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Loading reviews...</p>
+                        </div>
+                      </div>
+                    ) : reviews.length === 0 ? (
+                      <div className="flex h-40 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50">
+                        <Quote className="mb-2 h-8 w-8 text-slate-300" />
+                        <p className="text-sm font-medium text-slate-500">No reviews found yet.</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {reviews.map((rev) => (
+                          <div
+                            key={rev.id}
+                            className="group relative rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-sky-200 hover:shadow-md"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-center gap-3">
+                                {rev.userProfileImageUrl ? (
+                                  <img
+                                    src={rev.userProfileImageUrl}
+                                    alt={rev.userName}
+                                    className="h-10 w-10 rounded-full object-cover ring-2 ring-sky-50"
+                                  />
+                                ) : (
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sky-700">
+                                    <Users className="h-5 w-5" />
+                                  </div>
+                                )}
+                                <div>
+                                  <h4 className="text-sm font-bold text-slate-900">{rev.userName}</h4>
+                                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                    {rev.userRole} · {new Date(rev.createdAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 rounded-full bg-sky-50 px-2 py-1">
+                                <Star className="h-3 w-3 fill-sky-500 text-sky-500" />
+                                <span className="text-xs font-black text-sky-700">{rev.rating}</span>
+                              </div>
+                            </div>
+
+                            <div className="mt-4">
+                              <h5 className="font-bold text-slate-900 group-hover:text-sky-700 transition-colors">{rev.title}</h5>
+                              <p className="mt-2 text-sm leading-relaxed text-slate-600 line-clamp-3">
+                                "{rev.comment}"
+                              </p>
+                            </div>
+
+                            {rev.supportTopic && (
+                              <div className="mt-4 flex items-center gap-2">
+                                <span className="rounded-lg bg-slate-100 px-2 py-1 text-[10px] font-bold text-slate-600 uppercase tracking-tight">
+                                  Topic: {rev.supportTopic}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
