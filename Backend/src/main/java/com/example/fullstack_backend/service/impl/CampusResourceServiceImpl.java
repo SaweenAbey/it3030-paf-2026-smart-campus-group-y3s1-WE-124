@@ -31,6 +31,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
 
     @Override
     public CampusResourceResponse createResource(CampusResourceRequest request) {
+        validateAvailabilityTimes(request.getAvailabilityStartTime(), request.getAvailabilityEndTime());
+
         CampusResource resource = CampusResource.builder()
                 .name(request.getName())
                 .description(request.getDescription())
@@ -39,6 +41,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .capacity(request.getCapacity())
                 .location(request.getLocation())
                 .availabilityDurationMinutes(request.getAvailabilityDurationMinutes())
+                .availabilityStartTime(request.getAvailabilityStartTime())
+                .availabilityEndTime(request.getAvailabilityEndTime())
                 .features(normalizeFeatures(request.getFeatures()))
                 .status(request.getStatus() != null ? request.getStatus() : ResourceStatus.ACTIVE)
                 .build();
@@ -50,6 +54,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
 
     @Override
     public CampusResourceResponse updateResource(Long id, CampusResourceRequest request) {
+        validateAvailabilityTimes(request.getAvailabilityStartTime(), request.getAvailabilityEndTime());
+
         CampusResource existing = campusResourceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Resource not found with id: " + id));
 
@@ -60,6 +66,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
         existing.setCapacity(request.getCapacity());
         existing.setLocation(request.getLocation());
         existing.setAvailabilityDurationMinutes(request.getAvailabilityDurationMinutes());
+        existing.setAvailabilityStartTime(request.getAvailabilityStartTime());
+        existing.setAvailabilityEndTime(request.getAvailabilityEndTime());
         existing.setFeatures(normalizeFeatures(request.getFeatures()));
         if (request.getStatus() != null) {
             existing.setStatus(request.getStatus());
@@ -104,6 +112,25 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<CampusResourceResponse> getAvailableResources() {
+        List<CampusResource> resources = campusResourceRepository.searchResources(null, ResourceStatus.ACTIVE, null, null);
+        return resources.stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public CampusResourceResponse updateResourceStatus(Long id, ResourceStatus status) {
+        CampusResource resource = campusResourceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Resource not found with id: " + id));
+        resource.setStatus(status);
+        CampusResource updated = campusResourceRepository.save(resource);
+        logger.info("Updated resource {} status to {}", id, status);
+        return mapToResponse(updated);
+    }
+
     private CampusResourceResponse mapToResponse(CampusResource resource) {
         return CampusResourceResponse.builder()
                 .id(resource.getId())
@@ -114,6 +141,8 @@ public class CampusResourceServiceImpl implements CampusResourceService {
                 .capacity(resource.getCapacity())
                 .location(resource.getLocation())
                 .availabilityDurationMinutes(resource.getAvailabilityDurationMinutes())
+                .availabilityStartTime(resource.getAvailabilityStartTime())
+                .availabilityEndTime(resource.getAvailabilityEndTime())
                 .features(resource.getFeatures())
                 .status(resource.getStatus())
                 .createdAt(resource.getCreatedAt())
@@ -125,6 +154,14 @@ public class CampusResourceServiceImpl implements CampusResourceService {
         return request.getAvailabilityDurationMinutes() != null && request.getAvailabilityDurationMinutes() > 0
                 ? request.getAvailabilityDurationMinutes()
                 : null;
+    }
+
+    private void validateAvailabilityTimes(String start, String end) {
+        if (start != null && end != null) {
+            if (start.compareTo(end) >= 0) {
+                throw new IllegalArgumentException("Operation end time must be after the start time");
+            }
+        }
     }
 
     private Set<String> normalizeFeatures(Set<String> incomingFeatures) {

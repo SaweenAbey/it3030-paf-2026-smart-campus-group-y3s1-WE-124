@@ -4,6 +4,7 @@ import './App.css';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import AdminLogin from './pages/AdminLogin';
@@ -20,10 +21,12 @@ import NotificationCreate from './pages/NotificationCreate';
 import Services from './pages/Services';
 import ResourcesCatalogue from './pages/resources/ResourcesCatalogue';
 import Support from './pages/Support';
+import ReviewsPage from './pages/ReviewsPage';
 import ReviewSubmitPage from './pages/ReviewSubmitPage';
 import ReviewSubmittedPage from './pages/ReviewSubmittedPage';
 import ChatbotFloatingButton from './chatbot/ChatbotFloatingButton';
 import TicketCenter from './tickets/pages/TicketCenter';
+import TermsAndConditions from './pages/TermsAndConditions';
 
 const getDefaultRouteByRole = (role) => {
   const normalizedRole = (role || '').toUpperCase();
@@ -110,6 +113,30 @@ const PublicRoute = ({ children }) => {
     : children;
 };
 
+// Restricted Route for Managers and Technicians
+const RestrictedRoute = ({ children }) => {
+  const { user, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#38bdf8] border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated()) {
+    return <Navigate to="/login" />;
+  }
+
+  const userRole = (user?.role || '').toUpperCase();
+  if (userRole === 'MANAGER' || userRole === 'TECHNICIAN') {
+    return <Navigate to={getDefaultRouteByRole(user?.role)} />;
+  }
+
+  return children;
+};
+
 function AppContent() {
   const location = useLocation();
   const hideNavbar = ['/login', '/admin-login', '/manager-login', '/signup', '/role-selector'].includes(location.pathname);
@@ -123,9 +150,9 @@ function AppContent() {
         <Route
           path="/bookings"
           element={
-            <ProtectedRoute>
+            <RestrictedRoute>
               <BookingDashboard />
-            </ProtectedRoute>
+            </RestrictedRoute>
           }
         />
         <Route
@@ -144,7 +171,14 @@ function AppContent() {
             </ProtectedRoute>
           }
         />
-        <Route path="/services" element={<Services />} />
+        <Route 
+          path="/services" 
+          element={
+            <RestrictedRoute>
+              <Services />
+            </RestrictedRoute>
+          } 
+        />
         <Route path="/support" element={<Support />} />
         <Route
           path="/dashboard"
@@ -169,6 +203,10 @@ function AppContent() {
               <ManagerDashboard />
             </ManagerProtectedRoute>
           }
+        />
+        <Route
+          path="/reviews"
+          element={<ReviewsPage />}
         />
         <Route
           path="/notifications/create"
@@ -200,7 +238,7 @@ function AppContent() {
             <ProtectedRoute>
               <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6">
                 <div className="mx-auto max-w-7xl">
-                  <div className="mb-6 rounded-3xl bg-gradient-to-r from-slate-900 to-slate-700 p-6 text-white shadow-2xl md:p-8">
+                  <div className="mb-6 rounded-3xl bg-linear-to-r from-slate-900 to-slate-700 p-6 text-white shadow-2xl md:p-8">
                     <h1 className="text-3xl font-bold md:text-4xl">Incident Ticket Center</h1>
                     <p className="mt-2 text-sm text-slate-200">Track issue workflow: OPEN to IN_PROGRESS to RESOLVED to CLOSED</p>
                   </div>
@@ -219,7 +257,7 @@ function AppContent() {
           }
         />
         <Route
-          path="/adminlog"
+          path="/admin-login"
           element={
             <PublicRoute>
               <AdminLogin />
@@ -242,9 +280,15 @@ function AppContent() {
             </PublicRoute>
           }
         />
+        <Route path="/terms" element={<TermsAndConditions />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <ChatbotFloatingButton />
+      {!hideNavbar && (
+        <div className="relative z-50">
+          <Footer />
+        </div>
+      )}
     </div>
   );
 }

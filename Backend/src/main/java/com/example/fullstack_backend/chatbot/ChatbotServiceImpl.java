@@ -55,7 +55,7 @@ public class ChatbotServiceImpl implements ChatbotService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
 
-    @Value("${gemini.api.key:}")
+    @Value("${gemini.api.key:AIzaSyD0eX_JMTqbW48P5THylJdMgvVjckwQXOI}")
     private String geminiApiKey;
 
     @Value("${gemini.model:gemini-1.5-flash}")
@@ -85,23 +85,23 @@ public class ChatbotServiceImpl implements ChatbotService {
     }
 
     private ChatbotResponse buildRuleBasedResponse(String username, String normalized, boolean geminiFallback) {
-        if (normalized.contains("resource") || normalized.contains("all resources") || normalized.contains("facility")) {
+        if (normalized.contains("resource") || normalized.contains("facility") || normalized.contains("list")) {
             return buildResourcesResponse();
         }
 
-        if (normalized.contains("booking") || normalized.contains("my bookings") || normalized.contains("booked")) {
+        if (normalized.contains("booking") || normalized.contains("my") || normalized.contains("status")) {
             return buildBookingDetailsResponse(username);
         }
 
-        if (normalized.contains("available") || normalized.contains("time slot") || normalized.contains("availability") || normalized.contains("slot")) {
+        if (normalized.contains("available") || normalized.contains("time") || normalized.contains("slot")) {
             return buildAvailabilityResponse(normalized);
         }
 
         if (isGreeting(normalized)) {
             return ChatbotResponse.builder()
                     .intent("greeting")
-                    .answer("Hi. Welcome to UNI 360 AI Assistant. I can help with resources, booking details, and available time slots.")
-                    .followUpQuestion("What would you like to check first?")
+                    .answer("Hello! I'm the UNI 360 Smart Assistant. How can I help you manage campus resources or bookings today?")
+                    .followUpQuestion("You can ask about available facilities, your current bookings, or specific time slots.")
                     .suggestions(getDefaultSuggestions())
                     .timestamp(LocalDateTime.now())
                     .build();
@@ -109,8 +109,8 @@ public class ChatbotServiceImpl implements ChatbotService {
 
         return ChatbotResponse.builder()
                 .intent("general")
-                .answer("UNI 360 AI Assistant here. I can help with campus resources, booking details, and available time slots.")
-            .followUpQuestion("Would you like to check all resources, your booking details, or available time slots?")
+                .answer("I'm here to help you navigate UNI 360. I have access to live resource data and your booking history.")
+                .followUpQuestion("Would you like to see available resources, check your booking status, or find a free time slot?")
                 .suggestions(getDefaultSuggestions())
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -119,26 +119,52 @@ public class ChatbotServiceImpl implements ChatbotService {
     private ChatbotResponse buildGeminiResponse(String username, String question, String normalizedQuestion) throws Exception {
         String intent = detectIntent(normalizedQuestion);
 
-        String resourcesContext = "Not requested in this question.";
-        String bookingContext = "Not requested in this question.";
-        String availabilityContext = "Not requested in this question.";
+        // Gather comprehensive system context for grounding
+        StringBuilder contextBuilder = new StringBuilder();
+        contextBuilder.append("Current System Time: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))).append("\n");
+        contextBuilder.append("Current User: ").append(username).append("\n\n");
 
-        if ("resources".equals(intent)) {
-            resourcesContext = buildResourcesResponse().getAnswer();
-        } else if ("bookings".equals(intent)) {
-            bookingContext = buildBookingDetailsResponse(username).getAnswer();
-        } else if ("availability".equals(intent)) {
-            availabilityContext = buildAvailabilityResponse(normalizedQuestion).getAnswer();
+        // Grounding: Available Resources
+        List<CampusResource> resources = resourceRepository.findAll();
+        contextBuilder.append("CAMPUS RESOURCES (Live Inventory):\n");
+        if (resources.isEmpty()) {
+            contextBuilder.append("- No resources found in the database.\n");
+        } else {
+            resources.forEach(r -> contextBuilder.append("- ").append(r.getName())
+                .append(" [ID: ").append(r.getId()).append("] | Type: ").append(r.getType())
+                .append(" | Location: ").append(r.getLocation())
+                .append(" | Status: ").append(r.getStatus()).append("\n"));
+        }
+        contextBuilder.append("\n");
+
+        // Grounding: User's Bookings
+        contextBuilder.append("USER BOOKING HISTORY (Recent):\n");
+        List<Booking> userBookings = bookingRepository.findTop10ByUserIdOrderByCreatedAtDesc(username);
+        if (userBookings.isEmpty()) {
+            contextBuilder.append("- User has no previous or pending bookings.\n");
+        } else {
+            userBookings.forEach(b -> contextBuilder.append("- Booking #").append(b.getId())
+                .append(" | Resource: ").append(b.getResourceId())
+                .append(" | Start: ").append(b.getStartTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
+                .append(" | Status: ").append(b.getStatus()).append("\n"));
+        }
+        contextBuilder.append("\n");
+
+        // Specific Availability Context if requested
+        if ("availability".equals(intent)) {
+            contextBuilder.append("SPECIFIC AVAILABILITY DETAILS:\n");
+            contextBuilder.append(buildAvailabilityResponse(normalizedQuestion).getAnswer()).append("\n\n");
         }
 
-        String prompt = "You are UNI360 Smart Campus assistant. "
-            + "Answer clearly and concisely in plain text. "
-            + "If the user asks about unavailable data, say what is needed next.\n\n"
-            + "User question:\n" + question + "\n\n"
-            + "Context - Resources:\n" + resourcesContext + "\n\n"
-            + "Context - Bookings:\n" + bookingContext + "\n\n"
-            + "Context - Availability:\n" + availabilityContext + "\n\n"
-            + "Respond with practical details and short follow-up guidance.";
+        String prompt = "You are the UNI360 Smart Campus AI Assistant. Your goal is to help users manage campus resources and bookings.\n\n"
+            + "SYSTEM CONTEXT:\n" + contextBuilder.toString() + "\n"
+            + "INSTRUCTIONS:\n"
+            + "1. Use the provided context to answer the user's question accurately.\n"
+            + "2. If the user asks about a specific resource, refer to its live status and location.\n"
+            + "3. If the user wants to book something, explain the availability and suggest a slot.\n"
+            + "4. Be concise, professional, and friendly.\n"
+            + "5. Use plain text only.\n\n"
+            + "USER QUESTION: " + question;
 
         Map<String, Object> body = Map.of(
             "contents", List.of(Map.of(
@@ -151,8 +177,8 @@ public class ChatbotServiceImpl implements ChatbotService {
 
         return ChatbotResponse.builder()
             .intent(intent)
-            .answer("[Gemini AI] " + answer)
-            .followUpQuestion("Generated by Gemini AI. Would you like me to check resources, booking details, or available time slots next?")
+            .answer(answer)
+            .followUpQuestion("Is there anything else I can help you with regarding these details?")
             .suggestions(getDefaultSuggestions())
             .timestamp(LocalDateTime.now())
             .build();
@@ -176,7 +202,7 @@ public class ChatbotServiceImpl implements ChatbotService {
                 continue;
             }
 
-            String endpoint = "https://generativelanguage.googleapis.com/v1beta/models/"
+            String endpoint = "https://generativelanguage.googleapis.com/v1/models/"
                     + model + ":generateContent?key=" + geminiApiKey;
 
             HttpRequest httpRequest = HttpRequest.newBuilder()
@@ -227,10 +253,11 @@ public class ChatbotServiceImpl implements ChatbotService {
     }
 
     private boolean isGreeting(String normalized) {
-        return normalized.matches("^(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*$")
-                || normalized.equals("hi")
-                || normalized.equals("hello")
-                || normalized.equals("hey");
+        return normalized.matches("^(hi|hello|hey|good morning|good afternoon|good evening|good night|bye|goodbye|thanks|thank you)[!. ]*$")
+                || normalized.contains("hi ")
+                || normalized.contains("hello ")
+                || normalized.contains("hey ")
+                || normalized.contains("night");
     }
 
     @Override

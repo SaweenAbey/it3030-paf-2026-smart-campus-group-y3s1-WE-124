@@ -12,4 +12,5 @@ public interface ReviewService {
     List<ReviewResponse> getPublicReviews(int limit);
 
     List<ReviewResponse> getMyReviews(String username);
+    List<ReviewResponse> getAllReviews();
 }

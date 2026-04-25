@@ -1,33 +1,56 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
+  BadgeCheck,
   CalendarCheck2,
-  CirclePlus,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  CircleUserRound,
+  Cog,
+  IdCard,
+  LayoutGrid,
   LogOut,
-  Tickets,
+  Mail,
+  PencilLine,
+  ShieldCheck,
+  Ticket,
   UserRound,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getMyBookings, cancelBooking } from '../api/bookingApi';
 import TicketCenter from '../tickets/pages/TicketCenter';
+import uni360Logo from '../assets/logo.png';
 
 const TABS = [
-  { key: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { key: 'dashboard', label: 'Overview', icon: LayoutGrid },
   { key: 'bookings', label: 'My Bookings', icon: CalendarCheck2 },
-  { key: 'raise-ticket', label: 'Raise Tickets', icon: CirclePlus },
-  { key: 'my-tickets', label: 'My Tickets', icon: Tickets },
+  { key: 'incidents', label: 'Incidents', icon: Ticket },
   { key: 'profile', label: 'Profile', icon: UserRound },
+  { key: 'settings', label: 'Settings', icon: Cog },
 ];
 
 const UserDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [bookingError, setBookingError] = useState('');
+
+  const userInitials = useMemo(() => {
+    return (user?.name || user?.username || 'U')
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(p => p[0]?.toUpperCase())
+      .join('');
+  }, [user]);
 
   const bookingStats = useMemo(() => {
     const total = bookings.length;
@@ -43,6 +66,20 @@ const UserDashboard = () => {
       loadBookings();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const queryTabRaw = new URLSearchParams(location.search).get('tab');
+    const queryTab = queryTabRaw === 'my-tickets' ? 'incidents' : queryTabRaw;
+    const validTab = TABS.some((item) => item.key === queryTab);
+    if (validTab && queryTab !== activeTab) {
+      setActiveTab(queryTab);
+    }
+  }, [location.search]);
+
+  const onSelectTab = (tabKey) => {
+    setActiveTab(tabKey);
+    navigate(`/dashboard?tab=${tabKey}`, { replace: true });
+  };
 
   const loadBookings = async () => {
     setLoadingBookings(true);
@@ -110,88 +147,140 @@ const UserDashboard = () => {
     ];
 
     return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Dashboard Analytics</h2>
-          <p className="text-slate-500">Overview of your booking activity and trends.</p>
-        </div>
-
-        {loadingBookings && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
-            Loading analytics...
-          </div>
-        )}
-
-        {!loadingBookings && bookingError && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{bookingError}</div>
-        )}
-
-        {!loadingBookings && !bookingError && (
-          <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p className="text-sm text-slate-500">Total Bookings</p>
-                <p className="mt-2 text-3xl font-bold text-slate-800">{bookingStats.total}</p>
+      <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+         {/* User Stats Grid */}
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'My Bookings', value: bookingStats.total, trend: '+2', icon: CalendarDays, color: 'sky' },
+              { label: 'Approval Rate', value: `${chartData[0].percent}%`, trend: 'Optimal', icon: BadgeCheck, color: 'emerald' },
+              { label: 'Active Support', value: '1', trend: 'In Progress', icon: Ticket, color: 'indigo' },
+              { label: 'Reward Points', value: '850', trend: '+50', icon: Zap, color: 'amber' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-white rounded-3xl border border-slate-200/60 p-6 shadow-sm hover:shadow-md transition-all group">
+                 <div className="flex justify-between items-start mb-4">
+                    <div className={`p-3 rounded-2xl bg-${stat.color}-50 text-${stat.color}-600 group-hover:scale-110 transition-transform`}>
+                       <stat.icon className="w-5 h-5" />
+                    </div>
+                    <span className={`text-[10px] font-black px-2 py-1 rounded-lg ${stat.trend.startsWith('+') ? 'bg-emerald-50 text-emerald-600' : 'bg-sky-50 text-sky-600'}`}>
+                       {stat.trend}
+                    </span>
+                 </div>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{stat.label}</p>
+                 <h3 className="text-3xl font-black text-slate-900 mt-1">{stat.value}</h3>
               </div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5 shadow-sm">
-                <p className="text-sm text-emerald-700">Approved</p>
-                <p className="mt-2 text-3xl font-bold text-emerald-800">{bookingStats.approved}</p>
-              </div>
-              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
-                <p className="text-sm text-amber-700">Pending</p>
-                <p className="mt-2 text-3xl font-bold text-amber-800">{bookingStats.pending}</p>
-              </div>
-              <div className="rounded-2xl border border-rose-100 bg-rose-50 p-5 shadow-sm">
-                <p className="text-sm text-rose-700">Rejected</p>
-                <p className="mt-2 text-3xl font-bold text-rose-800">{bookingStats.rejected}</p>
-              </div>
-            </div>
+            ))}
+         </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800">Booking Status Graph</h3>
-                <div className="mt-5 space-y-4">
-                  {chartData.map((item) => (
-                    <div key={item.name}>
-                      <div className="mb-1 flex items-center justify-between text-sm">
-                        <span className="text-slate-700">{item.name}</span>
-                        <span className="font-semibold text-slate-700">{item.count} ({item.percent}%)</span>
-                      </div>
-                      <div className="h-3 w-full rounded-full bg-slate-100">
-                        <div
-                          className={`h-3 rounded-full ${item.color}`}
-                          style={{ width: `${item.percent || 2}%` }}
+         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+            <div className="space-y-6">
+               {/* Activity Graph */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                  <div className="flex justify-between items-center mb-8">
+                     <div>
+                        <h3 className="text-xl font-black text-slate-900 tracking-tight">Booking Activity</h3>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Resource engagement over time</p>
+                     </div>
+                     <div className="flex gap-2">
+                        {['7D', '30D', '90D'].map(t => (
+                          <button key={t} className={`px-3 py-1.5 rounded-xl text-[10px] font-black tracking-widest transition-all ${t === '30D' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
+                            {t}
+                          </button>
+                        ))}
+                     </div>
+                  </div>
+                  
+                  <div className="relative h-[260px] w-full bg-slate-50/20 rounded-3xl overflow-hidden">
+                     <svg className="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="none">
+                        <defs>
+                           <linearGradient id="userChartGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                           </linearGradient>
+                        </defs>
+                        <path 
+                          d="M0,250 C100,230 200,280 300,180 C400,80 500,220 600,140 C700,60 750,110 800,90 L800,300 L0,300 Z" 
+                          fill="url(#userChartGrad)"
                         />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                        <path 
+                          d="M0,250 C100,230 200,280 300,180 C400,80 500,220 600,140 C700,60 750,110 800,90" 
+                          fill="none" 
+                          stroke="#3b82f6" 
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                        />
+                     </svg>
+                  </div>
+               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-800">Recent Booking Details</h3>
-                <div className="mt-4 space-y-3">
-                  {bookings.slice(0, 5).map((booking) => (
-                    <div key={booking.id} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-800">Booking #{booking.id}</p>
-                        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-slate-600">
-                          {booking.status}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {formatDateTime(booking.startTime)} to {formatDateTime(booking.endTime)}
-                      </p>
-                    </div>
-                  ))}
-                  {bookings.length === 0 && (
-                    <p className="text-sm text-slate-500">No booking records available yet.</p>
-                  )}
-                </div>
-              </div>
+               {/* Upcoming Bookings List */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight mb-6">Confirmed Upcoming</h3>
+                  <div className="space-y-4">
+                     {bookings.slice(0, 3).map((booking, i) => (
+                       <div key={i} className="flex items-center justify-between p-5 rounded-2xl border-2 border-slate-50 bg-white hover:border-blue-100 transition-all group shadow-sm">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black">
+                                #{booking.id.toString().slice(-2)}
+                             </div>
+                             <div>
+                                <p className="text-sm font-black text-slate-900">Resource Booking</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{formatDateTime(booking.startTime)}</p>
+                             </div>
+                          </div>
+                          <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg">
+                             {booking.status}
+                          </span>
+                       </div>
+                     ))}
+                     {bookings.length === 0 && <p className="text-center py-8 text-slate-400 font-bold uppercase text-[10px] tracking-widest">No Active Bookings</p>}
+                  </div>
+               </div>
             </div>
-          </>
-        )}
+
+            <div className="space-y-6">
+               {/* Personal Calendar */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm">
+                  <div className="flex justify-between items-center mb-6">
+                     <h4 className="text-lg font-black text-slate-900">Personal Schedule</h4>
+                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}
+                     </span>
+                  </div>
+                  <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-black text-slate-300 uppercase mb-4">
+                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
+                  </div>
+                  <div className="grid grid-cols-7 gap-2">
+                     {Array.from({ length: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() }, (_, i) => {
+                       const day = i + 1;
+                       const isToday = day === new Date().getDate();
+                       return (
+                         <div key={i} className={`aspect-square rounded-xl flex items-center justify-center text-xs font-black transition-all cursor-pointer ${isToday ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-600 hover:bg-slate-50'}`}>
+                           {day}
+                         </div>
+                       );
+                     })}
+                  </div>
+               </div>
+
+               {/* Status Breakdown Circle */}
+               <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm flex flex-col items-center">
+                  <h4 className="text-lg font-black text-slate-900 mb-6 w-full text-left">Request Success</h4>
+                  <div className="relative w-32 h-32 flex items-center justify-center mb-6">
+                     <svg className="w-full h-full -rotate-90">
+                        <circle cx="64" cy="64" r="56" fill="none" stroke="#f1f5f9" strokeWidth="12" />
+                        <circle cx="64" cy="64" r="56" fill="none" stroke="#3b82f6" strokeWidth="12" strokeDasharray="351.85" strokeDashoffset={351.85 - (351.85 * chartData[0].percent) / 100} strokeLinecap="round" className="transition-all duration-1000" />
+                     </svg>
+                     <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <span className="text-2xl font-black text-slate-900">{chartData[0].percent}%</span>
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Approved</span>
+                     </div>
+                  </div>
+                  <button onClick={() => navigate('/bookings')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all">
+                     New Request
+                  </button>
+               </div>
+            </div>
+         </div>
       </div>
     );
   };
@@ -261,44 +350,152 @@ const UserDashboard = () => {
     </div>
   );
 
-  const renderRaiseTickets = () => (
-    <div>
-      <h2 className="text-2xl font-bold text-slate-800">Raise Tickets</h2>
-      <p className="mb-5 text-slate-500">Create a new support request for campus services.</p>
-      <TicketCenter compact />
-    </div>
-  );
-
-  const renderMyTickets = () => (
-    <div>
-      <h2 className="text-2xl font-bold text-slate-800">My Tickets</h2>
-      <p className="mb-5 text-slate-500">Track status and updates on your existing tickets.</p>
-      <TicketCenter compact />
-    </div>
-  );
-
-  const renderProfile = () => (
+  const renderIncidents = () => (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800">Profile</h2>
-        <p className="text-slate-500">Your account details.</p>
+        <h2 className="text-2xl font-bold text-slate-800">Incident Tickets</h2>
+        <p className="mb-2 text-slate-500">Raise incident reports and track admin review and technician assignment.</p>
       </div>
+      <TicketCenter compact />
+    </div>
+  );
+
+  const renderProfile = () => {
+    return (
+      <div className="space-y-7 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <header>
+          <span className="inline-flex items-center rounded-full border border-blue-100 bg-blue-50 px-4 py-1 text-xs font-black uppercase tracking-[0.2em] text-blue-600">
+            Security and Identity
+          </span>
+          <h2 className="mt-3 text-4xl font-black text-slate-900 tracking-tight">Personal Profile</h2>
+          <p className="mt-2 text-lg font-bold text-slate-400">Manage your digital campus identity and preferences</p>
+        </header>
+
+        <div className="rounded-[3rem] border border-slate-200 bg-white/95 p-6 shadow-xl shadow-slate-200/50 md:p-10">
+          <div className="grid items-center gap-10 lg:grid-cols-[280px_1fr]">
+            <div className="relative group">
+              <div className="relative rounded-[2.5rem] bg-linear-to-br from-blue-600 to-indigo-700 p-8 text-center text-white shadow-2xl overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.2),transparent_50%)]" />
+                <div className="relative z-10 mx-auto flex h-40 w-40 items-center justify-center rounded-[2rem] border border-white/30 bg-white/10 text-6xl font-black shadow-inner overflow-hidden">
+                  {user?.profileImageUrl ? (
+                    <img 
+                      src={user.profileImageUrl} 
+                      alt={user.name} 
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <span className="drop-shadow-lg">{userInitials}</span>
+                  )}
+                </div>
+                <div className="mt-6 relative z-10">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-100">Status</p>
+                  <p className="text-sm font-black mt-1">Verified Member</p>
+                </div>
+              </div>
+              <span className="absolute -bottom-4 -right-4 inline-flex h-16 w-16 items-center justify-center rounded-[1.5rem] border-8 border-white bg-emerald-500 text-white shadow-xl transition-transform hover:scale-110">
+                <BadgeCheck size={32} strokeWidth={2.5} />
+              </span>
+            </div>
+
+            <div className="space-y-8">
+              <div className="flex flex-wrap items-center justify-between gap-6">
+                <div className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-emerald-600 shadow-sm">
+                  <ShieldCheck size={16} /> 
+                  Account Active
+                </div>
+                <div className="flex gap-3">
+                  <button className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg transition hover:bg-blue-600 hover:-translate-y-1">
+                    <PencilLine size={20} />
+                  </button>
+                  <button className="flex h-14 w-14 items-center justify-center rounded-2xl border-2 border-slate-100 bg-white text-slate-400 transition hover:border-blue-200 hover:text-blue-600">
+                    <LogOut size={20} onClick={onLogout} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-6 transition hover:border-blue-100">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Institutional Role</p>
+                  <p className="mt-3 flex items-center gap-3 text-xl font-black text-slate-900">
+                    <CircleUserRound size={22} className="text-blue-500" />
+                    {user?.role || 'STUDENT'}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-6 transition hover:border-blue-100">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Reference ID</p>
+                  <p className="mt-3 flex items-center gap-3 text-xl font-black text-slate-900">
+                    <IdCard size={22} className="text-blue-500" />
+                    {(user?.username || 'IT-0000').toUpperCase()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { 
+                    icon: CalendarDays, 
+                    text: `Member since ${user?.createdAt ? new Date(user.createdAt).getFullYear() : '2024'}` 
+                  },
+                  { icon: ShieldCheck, text: 'Identity Verified' },
+                  { icon: BarChart3, text: 'Full Resource Access' }
+                ].map((tag, i) => (
+                  <span key={i} className="inline-flex items-center gap-2 rounded-2xl border border-slate-100 bg-white px-5 py-3 text-xs font-bold text-slate-700 shadow-sm transition hover:shadow-md">
+                    <tag.icon size={16} className="text-blue-500" /> 
+                    {tag.text}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {[
+            { label: 'Full Display Name', value: user?.name, icon: UserRound },
+            { label: 'Institutional Email', value: user?.email, icon: Mail },
+            { label: 'System Username', value: user?.username, icon: CircleUserRound },
+            { label: 'Access Level', value: user?.role, icon: ShieldCheck },
+          ].map((field, i) => (
+            <div key={i} className="rounded-[2rem] border border-slate-200/60 bg-white p-7 shadow-sm transition hover:shadow-md group">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{field.label}</p>
+                  <p className="mt-2 text-lg font-black text-slate-900">{field.value || 'Not provided'}</p>
+                </div>
+                <div className="p-3 rounded-2xl bg-slate-50 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                  <field.icon size={18} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderSettings = () => (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-slate-800">Settings</h2>
+        <p className="text-slate-500">Configure your account and dashboard preferences.</p>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Full Name</p>
-          <p className="mt-1 font-semibold text-slate-800">{user?.name || 'Not provided'}</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-base font-bold text-slate-800">Notification Preferences</h3>
+          <p className="mt-1 text-sm text-slate-500">Email alerts for booking updates and ticket activity.</p>
+          <button className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+            Manage Notifications
+          </button>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Username</p>
-          <p className="mt-1 font-semibold text-slate-800">{user?.username || 'Not provided'}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Email</p>
-          <p className="mt-1 font-semibold text-slate-800">{user?.email || 'Not provided'}</p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Role</p>
-          <p className="mt-1 font-semibold text-slate-800">{user?.role || 'STUDENT'}</p>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-base font-bold text-slate-800">Security Controls</h3>
+          <p className="mt-1 text-sm text-slate-500">Update password and secure your account access.</p>
+          <button className="mt-4 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+            Open Security Center
+          </button>
         </div>
       </div>
     </div>
@@ -307,66 +504,114 @@ const UserDashboard = () => {
   const renderContent = () => {
     if (activeTab === 'dashboard') return renderDashboard();
     if (activeTab === 'bookings') return renderBookings();
-    if (activeTab === 'raise-ticket') return renderRaiseTickets();
-    if (activeTab === 'my-tickets') return renderMyTickets();
+    if (activeTab === 'incidents') return renderIncidents();
+    if (activeTab === 'settings') return renderSettings();
     return renderProfile();
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-5 sm:px-6 lg:px-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">UNI360</p>
-            <h1 className="text-3xl font-bold text-slate-900">User Dashboard</h1>
-            <p className="text-sm text-slate-500">Welcome back, {user?.name || 'User'}.</p>
+    <div className="min-h-screen bg-linear-to-br from-slate-100 via-slate-100 to-slate-200/70 p-3 sm:p-4 lg:p-5">
+      <div className="flex min-h-[calc(100vh-24px)] flex-col gap-4 lg:flex-row">
+        <aside
+          className={`hidden rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur transition-all duration-300 lg:flex lg:flex-col ${
+            sidebarCollapsed ? 'w-20' : 'w-64'
+          }`}
+        >
+          <div className="flex items-center justify-between px-2 py-1">
+            <div className="flex items-center gap-2">
+              <img src={uni360Logo} alt="UNI 360" className="h-10 w-10 rounded-full object-cover" />
+              {!sidebarCollapsed && <p className="text-2xl font-black text-slate-900">Uni 360</p>}
+            </div>
+            <button
+              onClick={() => setSidebarCollapsed((prev) => !prev)}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+              aria-label="Toggle sidebar"
+            >
+              {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
           </div>
+
+          {!sidebarCollapsed && (
+            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-100 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-xl font-bold text-white overflow-hidden shadow-md">
+                  {user?.profileImageUrl ? (
+                    <img 
+                      src={user.profileImageUrl} 
+                      alt={user.name} 
+                      className="h-full w-full object-cover" 
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    userInitials
+                  )}
+                </div>
+                <div>
+                  <p className="text-xl font-black text-slate-900 leading-tight">Student</p>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-emerald-500">Live Session</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <nav className="mt-8 space-y-2">
+            {TABS.map((tab) => {
+              const selected = activeTab === tab.key;
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => onSelectTab(tab.key)}
+                  className={`flex w-full items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
+                    selected
+                      ? 'bg-blue-600 text-white shadow-md shadow-blue-300/50'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                  title={sidebarCollapsed ? tab.label : undefined}
+                >
+                  <TabIcon size={18} strokeWidth={2.2} />
+                  {!sidebarCollapsed && <span>{tab.label}</span>}
+                </button>
+              );
+            })}
+          </nav>
+
           <button
             onClick={onLogout}
-            className="hidden items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 lg:inline-flex"
+            className={`mt-auto flex w-full items-center rounded-xl px-4 py-3 text-sm font-semibold text-rose-500 transition hover:bg-rose-50 ${
+              sidebarCollapsed ? 'justify-center' : 'gap-3'
+            }`}
           >
-            <LogOut size={16} />
-            Logout
+            <LogOut size={18} />
+            {!sidebarCollapsed && 'Logout'}
           </button>
-        </div>
-      </header>
+        </aside>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-          <aside className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-6 lg:h-fit">
-            <nav className="space-y-2">
-              {TABS.map((tab) => {
-                const selected = activeTab === tab.key;
-                const TabIcon = tab.icon;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${
-                      selected
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    <TabIcon size={18} strokeWidth={2.2} />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
+        <main className="flex-1 overflow-hidden rounded-3xl border border-slate-200 bg-slate-50/70 p-4 shadow-inner sm:p-6 lg:p-8">
+          <section className="mx-auto max-w-6xl">{renderContent()}</section>
+        </main>
+      </div>
 
-            <button
-              onClick={onLogout}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-700 lg:hidden"
-            >
-              <LogOut size={16} />
-              Logout
-            </button>
-          </aside>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
-            {renderContent()}
-          </section>
+      <main className="mx-auto mt-4 w-full lg:hidden">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <nav className="grid grid-cols-5 gap-2">
+            {TABS.map((tab) => {
+              const selected = activeTab === tab.key;
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => onSelectTab(tab.key)}
+                  className={`flex flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[9px] font-bold ${
+                    selected ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600'
+                  }`}
+                >
+                  <TabIcon size={14} />
+                  <span className="truncate w-full text-center">{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
         </div>
       </main>
     </div>

@@ -27,7 +27,15 @@ import com.example.fullstack_backend.ticket.model.TicketPriority;
 import com.example.fullstack_backend.ticket.model.TicketStatus;
 import com.example.fullstack_backend.ticket.repository.TicketCommentRepository;
 import com.example.fullstack_backend.ticket.repository.TicketRepository;
+import com.example.fullstack_backend.repository.CampusResourceRepository;
+import com.example.fullstack_backend.model.CampusResource;
+import com.example.fullstack_backend.model.ResourceStatus;
+import com.example.fullstack_backend.ticket.model.TicketCategory;
 import com.example.fullstack_backend.ticket.service.TicketService;
+import com.example.fullstack_backend.service.NotificationService;
+import com.example.fullstack_backend.dto.CreateNotificationRequest;
+import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
+import com.example.fullstack_backend.model.NotificationType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +47,8 @@ public class TicketServiceImpl implements TicketService {
     private final TicketRepository ticketRepository;
     private final TicketCommentRepository ticketCommentRepository;
     private final UserRepository userRepository;
+    private final CampusResourceRepository resourceRepository;
+    private final NotificationService notificationService;
 
     @Override
     public TicketResponse createTicket(CreateTicketRequest request, String actorUsername) {
@@ -54,22 +64,38 @@ public class TicketServiceImpl implements TicketService {
                 .raisedBy(actor)
                 .build();
 
-        if (request.getAttachmentUrls() != null) {
-            if (request.getAttachmentUrls().size() > 3) {
-                throw new IllegalArgumentException("A ticket can include up to 3 image attachments");
-            }
-            request.getAttachmentUrls().stream()
-                    .map(String::trim)
-                    .filter(url -> !url.isBlank())
-                    .forEach(url -> ticket.getAttachments().add(
-                            TicketAttachment.builder()
-                                    .ticket(ticket)
-                                    .imageUrl(url)
-                                    .build()
-                    ));
+        if (request.getAttachmentUrls() == null || request.getAttachmentUrls().isEmpty()) {
+            throw new IllegalArgumentException("At least one evidence image is required");
+        }
+        if (request.getAttachmentUrls().size() > 3) {
+            throw new IllegalArgumentException("A ticket can include up to 3 image attachments");
         }
 
+        request.getAttachmentUrls().stream()
+                .map(String::trim)
+                .filter(url -> !url.isBlank())
+                .forEach(url -> ticket.getAttachments().add(
+                        TicketAttachment.builder()
+                                .ticket(ticket)
+                                .imageUrl(url)
+                                .build()
+                ));
+
         Ticket saved = ticketRepository.save(ticket);
+
+        // Notify Admins about new ticket
+        try {
+            BroadcastNotificationRequest notif = BroadcastNotificationRequest.builder()
+                    .title("🎫 New Ticket: " + saved.getTitle())
+                    .message("A new ticket has been raised by " + actor.getName() + " (" + actor.getUsername() + "). Priority: " + saved.getPriority())
+                    .type(NotificationType.INFO)
+                    .actionUrl("/admin/dashboard?tab=incidents")
+                    .build();
+            notificationService.createForRole(Role.ADMIN, actorUsername, notif);
+        } catch (Exception e) {
+            // Log but don't fail
+        }
+
         return toResponse(saved);
     }
 
@@ -110,7 +136,7 @@ public class TicketServiceImpl implements TicketService {
             throw new IllegalArgumentException("You do not have permission to view assignable staff");
         }
 
-        return userRepository.findByRoleInAndIsActive(List.of(Role.TECHNICIAN, Role.MANAGER, Role.ADMIN), true)
+        return userRepository.findByRoleInAndIsActive(List.of(Role.TECHNICIAN), true)
                 .stream()
                 .map(user -> TicketAssigneeResponse.builder()
                         .id(user.getId())
@@ -136,20 +162,35 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Ticket ticket = getTicketOrThrow(ticketId);
+        User reviewer = getUserByUsername(actorUsername);
         User assignee = userRepository.findById(request.getAssigneeId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignee not found: " + request.getAssigneeId()));
 
-        if (assignee.getRole() != Role.TECHNICIAN && assignee.getRole() != Role.MANAGER && assignee.getRole() != Role.ADMIN) {
-            throw new IllegalArgumentException("Ticket can only be assigned to TECHNICIAN, MANAGER, or ADMIN staff");
+        if (assignee.getRole() != Role.TECHNICIAN) {
+            throw new IllegalArgumentException("Ticket can only be assigned to TECHNICIAN staff");
         }
 
         ticket.setAssignedTo(assignee);
+        ticket.setReviewedBy(reviewer);
 
-        if (ticket.getStatus() == TicketStatus.OPEN) {
-            ticket.setStatus(TicketStatus.IN_PROGRESS);
+        if (request.getResourceStatus() != null) {
+            updateRelatedResourceStatus(ticket, request.getResourceStatus());
         }
 
-        return toResponse(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        // Notify Assignee
+        try {
+            CreateNotificationRequest notif = CreateNotificationRequest.builder()
+                    .title("🛠️ Ticket Assigned to You")
+                    .message("Ticket #" + saved.getId() + " (" + saved.getTitle() + ") has been assigned to you by " + reviewer.getName())
+                    .type(NotificationType.INFO)
+                    .actionUrl("/technician/dashboard")
+                    .build();
+            notificationService.createForUser(assignee.getId(), actorUsername, notif);
+        } catch (Exception e) {}
+
+        return toResponse(saved);
     }
 
     @Override
@@ -179,7 +220,27 @@ public class TicketServiceImpl implements TicketService {
         }
 
         ticket.setStatus(nextStatus);
-        return toResponse(ticketRepository.save(ticket));
+
+        if (request.getResourceStatus() != null) {
+            updateRelatedResourceStatus(ticket, request.getResourceStatus());
+        }
+
+        Ticket saved = ticketRepository.save(ticket);
+
+        // Notify Reporter about status change
+        try {
+            if (saved.getRaisedBy() != null) {
+                CreateNotificationRequest notif = CreateNotificationRequest.builder()
+                        .title("📢 Ticket Status Updated")
+                        .message("Your ticket #" + saved.getId() + " is now " + saved.getStatus())
+                        .type(nextStatus == TicketStatus.RESOLVED ? NotificationType.SUCCESS : NotificationType.INFO)
+                        .actionUrl("/support")
+                        .build();
+                notificationService.createForUser(saved.getRaisedBy().getId(), actorUsername, notif);
+            }
+        } catch (Exception e) {}
+
+        return toResponse(saved);
     }
 
     @Override
@@ -198,7 +259,22 @@ public class TicketServiceImpl implements TicketService {
         ticket.setStatus(TicketStatus.REJECTED);
         ticket.setRejectionReason(request.getReason().trim());
 
-        return toResponse(ticketRepository.save(ticket));
+        Ticket saved = ticketRepository.save(ticket);
+
+        // Notify Reporter about rejection
+        try {
+            if (saved.getRaisedBy() != null) {
+                CreateNotificationRequest notif = CreateNotificationRequest.builder()
+                        .title("❌ Ticket Rejected")
+                        .message("Your ticket #" + saved.getId() + " has been rejected. Reason: " + saved.getRejectionReason())
+                        .type(NotificationType.WARNING)
+                        .actionUrl("/support")
+                        .build();
+                notificationService.createForUser(saved.getRaisedBy().getId(), actorUsername, notif);
+            }
+        } catch (Exception e) {}
+
+        return toResponse(saved);
     }
 
     @Override
@@ -224,7 +300,31 @@ public class TicketServiceImpl implements TicketService {
                 .content(request.getContent().trim())
                 .build();
 
-        return toCommentResponse(ticketCommentRepository.save(comment));
+        TicketComment saved = ticketCommentRepository.save(comment);
+
+        // Notify the other party
+        try {
+            User recipient = null;
+            if (actorUsername.equals(ticket.getRaisedBy().getUsername())) {
+                // Reporter commented, notify assignee
+                recipient = ticket.getAssignedTo();
+            } else {
+                // Staff commented, notify reporter
+                recipient = ticket.getRaisedBy();
+            }
+
+            if (recipient != null) {
+                CreateNotificationRequest notif = CreateNotificationRequest.builder()
+                        .title("💬 New Comment on Ticket")
+                        .message("New comment on #" + ticket.getId() + " from " + actor.getName())
+                        .type(NotificationType.INFO)
+                        .actionUrl(recipient.getRole() == Role.STUDENT ? "/support" : "/technician/dashboard")
+                        .build();
+                notificationService.createForUser(recipient.getId(), actorUsername, notif);
+            }
+        } catch (Exception e) {}
+
+        return toCommentResponse(saved);
     }
 
     @Override
@@ -329,6 +429,20 @@ public class TicketServiceImpl implements TicketService {
     private Ticket getTicketOrThrow(Long ticketId) {
         return ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
+    }
+
+    private void updateRelatedResourceStatus(Ticket ticket, ResourceStatus newStatus) {
+        if (ticket.getCategory() == TicketCategory.RESOURCE && ticket.getReferenceId() != null) {
+            try {
+                Long resourceId = Long.parseLong(ticket.getReferenceId());
+                CampusResource resource = resourceRepository.findById(resourceId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Resource not found for ticket: " + resourceId));
+                resource.setStatus(newStatus);
+                resourceRepository.save(resource);
+            } catch (NumberFormatException e) {
+                // referenceId is not a valid Long, ignore or handle as needed
+            }
+        }
     }
 
     private User getUserByUsername(String username) {

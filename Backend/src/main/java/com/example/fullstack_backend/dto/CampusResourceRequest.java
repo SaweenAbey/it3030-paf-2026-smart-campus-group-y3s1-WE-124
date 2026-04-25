@@ -44,6 +44,14 @@ public class CampusResourceRequest {
     @Min(value = 1, message = "Availability duration must be at least 1 minute")
     private Integer availabilityDurationMinutes;
 
+    @NotBlank(message = "Start time is required")
+    @jakarta.validation.constraints.Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$", message = "Start time must be in HH:mm format")
+    private String availabilityStartTime;
+
+    @NotBlank(message = "End time is required")
+    @jakarta.validation.constraints.Pattern(regexp = "^([01]\\d|2[0-3]):[0-5]\\d$", message = "End time must be in HH:mm format")
+    private String availabilityEndTime;
+
     private Set<String> features;
 
     private ResourceStatus status;
