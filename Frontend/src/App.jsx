@@ -136,7 +136,7 @@ const RestrictedRoute = ({ children }) => {
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = ['/login', '/admin-login', '/manager-login', '/signup', '/role-selector', '/dashboard', '/admin-dashboard', '/manager-dashboard'].includes(location.pathname);
+  const hideNavbar = ['/login', '/admin-login', '/manager-login', '/signup', '/role-selector'].includes(location.pathname);
 
   return (
     <div className="App">

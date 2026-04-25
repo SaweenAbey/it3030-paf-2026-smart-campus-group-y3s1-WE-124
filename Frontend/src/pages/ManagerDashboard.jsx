@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
 import BookingRequestsManager from '../components/BookingRequestsManager';
 import { resourceAPI, bookingAPI } from '../services/api';
 import mediaUpload from '../utils/mediaUpload';
@@ -466,7 +465,6 @@ const ManagerDashboard = () => {
           </Sidebar>
 
           <section className="space-y-6">
-            <Navbar />
             
             <div className={resourcePanelOpen ? 'grid gap-6 xl:grid-cols-[1fr_420px]' : 'space-y-6'}>
               {/* Tab Content Wrap */}
@@ -666,8 +664,17 @@ const ManagerDashboard = () => {
                 </div>
               )}
           {activeTab === 'booking-requests' && (
-            <div className="p-6">
-              <h2 className="text-2xl font-semibold text-slate-900 mb-6">Booking Requests</h2>
+            <div className="p-8 space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+              <div className="flex justify-between items-center mb-2">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">Booking Requests</h2>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Review and resolve facility reservation queues</p>
+                </div>
+                <div className="flex gap-2">
+                   <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                   <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Live System</span>
+                </div>
+              </div>
               <BookingRequestsManager />
             </div>
           )}
