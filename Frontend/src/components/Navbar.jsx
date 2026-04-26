@@ -32,18 +32,13 @@ const Navbar = () => {
 
   const baseLinks = [
     { label: 'Home', to: '/' },
-    { label: 'All Resources', to: '/resources' },
+    { label: 'Resources', to: '/resources' },
     { label: 'Booking', to: '/bookings' },
     { label: 'Services', to: '/services' },
     { label: 'Support', to: '/support' },
   ];
 
-  const userRole = user?.role?.toUpperCase() || '';
-  const isManagerOrTechnician = userRole === 'MANAGER' || userRole === 'TECHNICIAN';
-
-  const navLinks = isManagerOrTechnician 
-    ? baseLinks.filter(link => link.label !== 'Booking' && link.label !== 'Services')
-    : baseLinks;
+  const navLinks = baseLinks;
 
   const isActive = (to) => {
     if (to.includes('?')) {
@@ -61,7 +56,7 @@ const Navbar = () => {
         <p className="font-bold text-slate-800 text-sm">Are you sure you want to logout?</p>
         <div className="flex gap-2 justify-end">
           <button onClick={() => toast.dismiss(t.id)} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl bg-slate-100 text-slate-600">Cancel</button>
-          <button onClick={() => { toast.dismiss(t.id); logout(); toast.success('Logged out'); navigate('/login'); }} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl bg-rose-600 text-white">Logout</button>
+          <button onClick={() => { toast.dismiss(t.id); logout(); toast.success('Logged out'); navigate('/'); }} className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-xl bg-rose-600 text-white">Logout</button>
         </div>
       </div>
     ), { duration: Infinity });

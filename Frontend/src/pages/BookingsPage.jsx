@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
-import { getMyBookings, cancelBooking, updateBooking } from '../api/bookingApi';
+import { bookingAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import BookingCard from '../components/BookingCard';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -22,9 +23,9 @@ import {
 import toast from 'react-hot-toast';
 
 export default function BookingsPage() {
+  const { user } = useAuth();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState('user123'); // Default for demo, should be from auth
   const [editingBooking, setEditingBooking] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editSubmitting, setEditSubmitting] = useState(false);
@@ -35,7 +36,7 @@ export default function BookingsPage() {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      const res = await getMyBookings(userId);
+      const res = await bookingAPI.getMyBookings();
       setBookings(res.data || []);
     } catch (e) {
       console.error(e);
@@ -52,7 +53,7 @@ export default function BookingsPage() {
   const handleCancel = async (id) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     try {
-      await cancelBooking(id);
+      await bookingAPI.cancelBooking(id);
       toast.success('Booking cancelled successfully');
       fetchBookings();
     } catch (e) {
@@ -73,7 +74,7 @@ export default function BookingsPage() {
   const handleEditSave = async () => {
     setEditSubmitting(true);
     try {
-      await updateBooking(editingBooking.id, {
+      await bookingAPI.updateBooking(editingBooking.id, {
         startTime: editForm.startTime,
         endTime: editForm.endTime,
         purpose: editForm.purpose,

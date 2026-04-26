@@ -1,6 +1,6 @@
 const Bookings = () => {
   return (
-    <main className="min-h-[calc(100vh-6rem)] bg-slate-50 px-4 sm:px-6 py-8">
+    <main className="min-h-[calc(100vh-6rem)] bg-slate-50 px-4 pt-24 pb-8 sm:px-6">
       <section className="max-w-6xl mx-auto">
         <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
           <p className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold tracking-wide text-slate-500">

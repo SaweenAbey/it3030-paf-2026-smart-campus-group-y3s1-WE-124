@@ -37,6 +37,8 @@ import com.example.fullstack_backend.service.UserService;
 import com.example.fullstack_backend.service.NotificationService;
 import com.example.fullstack_backend.dto.BroadcastNotificationRequest;
 import com.example.fullstack_backend.model.NotificationType;
+import com.example.fullstack_backend.dto.ForgotPasswordRequest;
+import com.example.fullstack_backend.dto.ResetPasswordRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 
 @Service
@@ -688,6 +690,68 @@ public class UserServiceImpl implements UserService {
     private void clearOtpState(User user) {
         user.setLoginOtp(null);
         user.setLoginOtpExpiresAt(null);
+        user.setResetPasswordOtp(null);
+        user.setResetPasswordOtpExpiresAt(null);
+    }
+
+    @Override
+    public void initiateForgotPassword(ForgotPasswordRequest request) {
+        logger.info("Initiating forgot password for email: {}", request.getEmail());
+        
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
+
+        String otpCode = generateOtpCode();
+        LocalDateTime now = LocalDateTime.now();
+
+        user.setResetPasswordOtp(otpCode);
+        user.setResetPasswordOtpExpiresAt(now.plusMinutes(OTP_EXPIRY_MINUTES));
+        user.setLastOtpRequestedAt(now);
+        userRepository.save(user);
+
+        try {
+            emailOtpService.sendForgotPasswordOtp(user.getUsername(), user.getEmail(), otpCode);
+        } catch (IllegalStateException ex) {
+            logger.error("Forgot password OTP email delivery failed for user {}: {}", user.getUsername(), ex.getMessage());
+            throw new IllegalArgumentException(ex.getMessage());
+        }
+
+        logger.info("Forgot password OTP challenge created for user: {}", user.getUsername());
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        logger.info("Resetting password for email: {}", request.getEmail());
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
+
+        if (user.getResetPasswordOtp() == null || user.getResetPasswordOtpExpiresAt() == null) {
+            logger.warn("Password reset failed. No OTP challenge for user: {}", user.getUsername());
+            throw new IllegalArgumentException("No password reset request found. Please try again");
+        }
+
+        if (user.getResetPasswordOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            logger.warn("Password reset failed. OTP expired for user: {}", user.getUsername());
+            clearOtpState(user);
+            userRepository.save(user);
+            throw new IllegalArgumentException("OTP expired. Please try again");
+        }
+
+        if (!user.getResetPasswordOtp().equals(request.getOtp())) {
+            logger.warn("Password reset failed. Invalid OTP for user: {}", user.getUsername());
+            throw new IllegalArgumentException("Invalid OTP");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("Passwords do not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        clearOtpState(user);
+        userRepository.save(user);
+
+        logger.info("Password reset successful for user: {}", user.getUsername());
     }
 
     private boolean requiresOtp(Role role) {

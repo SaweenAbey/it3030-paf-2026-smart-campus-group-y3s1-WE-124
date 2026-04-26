@@ -20,9 +20,11 @@ import jakarta.servlet.http.Cookie;
 
 import com.example.fullstack_backend.dto.AuthResponse;
 import com.example.fullstack_backend.dto.GoogleAuthRequest;
+import com.example.fullstack_backend.dto.ForgotPasswordRequest;
 import com.example.fullstack_backend.dto.LoginRequest;
 import com.example.fullstack_backend.dto.OtpVerificationRequest;
 import com.example.fullstack_backend.dto.RegisterRequest;
+import com.example.fullstack_backend.dto.ResetPasswordRequest;
 import com.example.fullstack_backend.dto.UserResponse;
 import com.example.fullstack_backend.service.UserService;
 
@@ -142,5 +144,17 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         logger.info("User logged out, cookie cleared");
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        userService.initiateForgotPassword(request);
+        return ResponseEntity.ok("OTP sent to your email");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        userService.resetPassword(request);
+        return ResponseEntity.ok("Password reset successful");
     }
 }

@@ -468,7 +468,7 @@ const ManagerDashboard = () => {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#f8fafc_100%)] px-4 py-6">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#f8fafc_100%)] px-4 pt-24 pb-6">
       <div className="mx-auto max-w-360">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <Sidebar items={sidebarItems} activeTab={activeTab} onTabChange={setActiveTab} title="Manager Console">
@@ -1142,6 +1142,19 @@ const ManagerDashboard = () => {
                                         value={resourceForm.availabilityEndTime}
                                         onChange={handleResourceFieldChange}
                                         className="w-full rounded-2xl border-2 border-white/10 bg-white/5 px-6 py-4 text-base font-black text-white focus:bg-white/10 focus:border-rose-400 focus:outline-none transition-all"
+                                      />
+                                   </div>
+                                   <div className="space-y-4 sm:col-span-2">
+                                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                         <Clock className="w-3.5 h-3.5 text-sky-400" /> Max Duration (Minutes)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        name="availabilityDurationMinutes"
+                                        value={resourceForm.availabilityDurationMinutes}
+                                        onChange={handleResourceFieldChange}
+                                        placeholder="e.g. 60"
+                                        className="w-full rounded-2xl border-2 border-white/10 bg-white/5 px-6 py-4 text-base font-black text-white focus:bg-white/10 focus:border-sky-400 focus:outline-none transition-all"
                                       />
                                    </div>
                                 </div>

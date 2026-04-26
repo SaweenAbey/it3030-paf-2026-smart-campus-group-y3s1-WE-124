@@ -280,6 +280,14 @@ const Login = () => {
                       )}
                     </button>
                   </div>
+                  <div className="mt-2 flex justify-end">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm font-medium text-sky-600 transition hover:text-sky-700"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
                   {touched.password && errors.password && (
                     <p className="mt-1.5 flex items-center gap-1 text-sm text-red-500">
                       <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

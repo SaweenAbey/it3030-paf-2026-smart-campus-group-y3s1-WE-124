@@ -65,6 +65,7 @@ const ResourcesCatalogue = () => {
     location: '',
     availabilityStartTime: '',
     availabilityEndTime: '',
+    availabilityDurationMinutes: '',
     status: 'ACTIVE',
   });
 
@@ -159,6 +160,7 @@ const ResourcesCatalogue = () => {
       location: '',
       availabilityStartTime: '',
       availabilityEndTime: '',
+      availabilityDurationMinutes: '',
       status: 'ACTIVE',
     });
     setSelectedImageFile(null);
@@ -237,6 +239,9 @@ const ResourcesCatalogue = () => {
         location: formData.location.trim(),
         availabilityStartTime: formData.availabilityStartTime || null,
         availabilityEndTime: formData.availabilityEndTime || null,
+        availabilityDurationMinutes: formData.availabilityDurationMinutes
+          ? parseInt(formData.availabilityDurationMinutes, 10)
+          : null,
         status: formData.status,
       };
 
@@ -257,7 +262,7 @@ const ResourcesCatalogue = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20">
-      <div className="mx-auto max-w-[1400px] px-6 pt-12">
+      <div className="mx-auto max-w-[1400px] px-6 pt-24">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
            <div>
@@ -543,6 +548,21 @@ const ResourcesCatalogue = () => {
                           name="availabilityEndTime"
                           value={formData.availabilityEndTime}
                           onChange={handleFormChange}
+                          className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-6 py-5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all"
+                          disabled={saving}
+                        />
+                      </div>
+                      <div className="space-y-3 sm:col-span-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                           <Clock className="w-4 h-4 text-sky-600" />
+                           Max Duration (Minutes)
+                        </label>
+                        <input
+                          type="number"
+                          name="availabilityDurationMinutes"
+                          value={formData.availabilityDurationMinutes}
+                          onChange={handleFormChange}
+                          placeholder="e.g. 60"
                           className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50/50 px-6 py-5 text-sm font-bold text-slate-900 focus:bg-white focus:border-sky-500 focus:outline-none focus:ring-8 focus:ring-sky-50 transition-all"
                           disabled={saving}
                         />

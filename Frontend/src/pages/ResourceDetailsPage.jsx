@@ -89,6 +89,7 @@ export default function ResourceDetailsPage() {
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastBooking, setLastBooking] = useState(null);
+  const [existingBooking, setExistingBooking] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -97,6 +98,7 @@ export default function ResourceDetailsPage() {
       return;
     }
     fetchResourceDetails();
+    fetchUserBookingForResource();
   }, [resourceId, isAuthenticated, navigate]);
 
   useEffect(() => {
@@ -116,6 +118,19 @@ export default function ResourceDetailsPage() {
       navigate('/bookings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserBookingForResource = async () => {
+    try {
+      const res = await bookingAPI.getMyBookings();
+      const myBookings = res.data || [];
+      const match = myBookings.find(b => 
+        b.resourceId === resourceId && b.status === 'APPROVED'
+      );
+      setExistingBooking(match);
+    } catch (error) {
+      console.warn('Failed to fetch user bookings for receipt check', error);
     }
   };
 
@@ -454,6 +469,31 @@ export default function ResourceDetailsPage() {
                   <span className="text-[10px] font-black uppercase tracking-widest">{resource.capacity} CAPACITY</span>
                 </div>
               </div>
+
+              {existingBooking && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-emerald-50 border border-emerald-100 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                      <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Active Reservation</p>
+                      <h4 className="text-sm font-black text-slate-900">You have a confirmed booking for this resource.</h4>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => generateBookingReceipt(existingBooking, resource, user)}
+                    className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-sky-600 transition-all flex items-center gap-2 shadow-lg"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download Receipt
+                  </button>
+                </motion.div>
+              )}
             </div>
 
             <div className="relative rounded-[2.5rem] overflow-hidden bg-slate-100 border border-slate-100 shadow-2xl group">
