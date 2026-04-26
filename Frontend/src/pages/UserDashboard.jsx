@@ -20,7 +20,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { getMyBookings, cancelBooking } from '../api/bookingApi';
+import { bookingAPI } from '../services/api';
 import TicketCenter from '../tickets/pages/TicketCenter';
 import uni360Logo from '../assets/logo.png';
 
@@ -85,7 +85,7 @@ const UserDashboard = () => {
     setLoadingBookings(true);
     setBookingError('');
     try {
-      const response = await getMyBookings();
+      const response = await bookingAPI.getMyBookings();
       setBookings(response.data || []);
     } catch (error) {
       setBookingError('Failed to load bookings. Please try again.');
@@ -97,7 +97,7 @@ const UserDashboard = () => {
   const onCancelBooking = async (bookingId) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     try {
-      await cancelBooking(bookingId);
+      await bookingAPI.cancelBooking(bookingId);
       setBookings((prev) => prev.filter((item) => item.id !== bookingId));
     } catch (error) {
       window.alert('Failed to cancel booking. Please try again.');
@@ -106,7 +106,7 @@ const UserDashboard = () => {
 
   const onLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const formatDateTime = (value) => {
@@ -510,7 +510,7 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-100 via-slate-100 to-slate-200/70 p-3 sm:p-4 lg:p-5">
+    <div className="min-h-screen bg-linear-to-br from-slate-100 via-slate-100 to-slate-200/70 p-3 pt-24 sm:p-4 sm:pt-24 lg:p-5 lg:pt-24">
       <div className="flex min-h-[calc(100vh-24px)] flex-col gap-4 lg:flex-row">
         <aside
           className={`hidden rounded-3xl border border-slate-200 bg-white/95 p-3 shadow-xl backdrop-blur transition-all duration-300 lg:flex lg:flex-col ${

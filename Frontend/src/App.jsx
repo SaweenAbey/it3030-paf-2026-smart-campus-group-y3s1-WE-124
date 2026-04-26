@@ -11,6 +11,7 @@ import AdminLogin from './pages/AdminLogin';
 import ManagerLogin from './pages/ManagerLogin';
 import RoleSelector from './pages/RoleSelector';
 import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
@@ -47,7 +48,7 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  return isAuthenticated() ? children : <Navigate to="/login" />;
+  return isAuthenticated() ? children : <Navigate to="/" />;
 };
 
 // Admin Protected Route Component
@@ -126,7 +127,7 @@ const RestrictedRoute = ({ children }) => {
   }
 
   if (!isAuthenticated()) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/" />;
   }
 
   const userRole = (user?.role || '').toUpperCase();
@@ -139,7 +140,7 @@ const RestrictedRoute = ({ children }) => {
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbar = ['/login', '/admin-login', '/manager-login', '/signup', '/role-selector'].includes(location.pathname);
+  const hideNavbar = ['/login', '/admin-login', '/manager-login', '/signup', '/role-selector', '/forgot-password'].includes(location.pathname);
 
   return (
     <div className="App">
@@ -236,7 +237,7 @@ function AppContent() {
           path="/tickets"
           element={
             <ProtectedRoute>
-              <div className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6">
+              <div className="min-h-screen bg-slate-50 px-4 pt-24 pb-6 sm:px-6">
                 <div className="mx-auto max-w-7xl">
                   <div className="mb-6 rounded-3xl bg-linear-to-r from-slate-900 to-slate-700 p-6 text-white shadow-2xl md:p-8">
                     <h1 className="text-3xl font-bold md:text-4xl">Incident Ticket Center</h1>
@@ -277,6 +278,14 @@ function AppContent() {
           element={
             <PublicRoute>
               <Signup />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicRoute>
+              <ForgotPassword />
             </PublicRoute>
           }
         />

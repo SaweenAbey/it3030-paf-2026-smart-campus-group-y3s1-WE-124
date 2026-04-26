@@ -67,7 +67,7 @@ const Services = () => {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#e0f2fe,transparent_35%),radial-gradient(circle_at_bottom_left,#bae6fd,transparent_40%),#f8fafc]">
-      <section className="px-4 pt-10 pb-10 sm:px-6 lg:px-8">
+      <section className="px-4 pt-24 pb-10 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
         </div>
       </section>

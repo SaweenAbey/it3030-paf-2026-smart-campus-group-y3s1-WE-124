@@ -10,6 +10,8 @@ import com.example.fullstack_backend.dto.OtpVerificationRequest;
 import com.example.fullstack_backend.dto.RegisterRequest;
 import com.example.fullstack_backend.dto.UpdateUserRequest;
 import com.example.fullstack_backend.dto.UserResponse;
+import com.example.fullstack_backend.dto.ForgotPasswordRequest;
+import com.example.fullstack_backend.dto.ResetPasswordRequest;
 import com.example.fullstack_backend.model.Role;
 import com.example.fullstack_backend.model.User;
 
@@ -50,4 +52,8 @@ public interface UserService {
     UserResponse updateProfileImage(Long id, String imageUrl);
 
     UserResponse deleteProfileImage(Long id);
+
+    void initiateForgotPassword(ForgotPasswordRequest request);
+
+    void resetPassword(ResetPasswordRequest request);
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createBooking } from '../api/bookingApi';
+import { bookingAPI } from '../services/api';
 import '../styles/theme.css';
 
 export default function CreateBookingPage() {
@@ -20,7 +20,7 @@ export default function CreateBookingPage() {
     e.preventDefault();
     setError(''); setSuccess(''); setLoading(true);
     try {
-      await createBooking({
+      await bookingAPI.createBooking({
         ...form,
         expectedAttendees: form.expectedAttendees ? parseInt(form.expectedAttendees) : null
       });

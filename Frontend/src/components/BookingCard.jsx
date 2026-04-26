@@ -1,11 +1,33 @@
+import { useAuth } from '../context/AuthContext';
+import { resourceAPI } from '../services/api';
+import { generateBookingReceipt } from '../utils/receiptGenerator';
+import { useState } from 'react';
+
 export default function BookingCard({
   booking, onCancel, onEdit, showActions, onApprove, onReject
 }) {
+  const { user } = useAuth();
+  const [downloading, setDownloading] = useState(false);
+
   const fmt = (dt) => {
     if (!dt) return 'N/A';
     return new Date(dt).toLocaleString('en-US', {
       dateStyle: 'medium', timeStyle: 'short'
     });
+  };
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await resourceAPI.getById(booking.resourceId);
+      const resource = res.data;
+      generateBookingReceipt(booking, resource, user);
+    } catch (error) {
+      console.error('Failed to download receipt', error);
+      alert('Failed to download receipt. Resource details could not be loaded.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -145,6 +167,22 @@ export default function BookingCard({
             <button className="btn-danger"
               onClick={() => onCancel(booking.id)}>
               🚫 Cancel
+            </button>
+          )}
+
+          {/* Download Receipt for APPROVED */}
+          {!showActions && booking.status === 'APPROVED' && (
+            <button 
+              onClick={handleDownload}
+              disabled={downloading}
+              style={{
+                background: '#0f172a', color: 'white', border: 'none',
+                padding: '8px 18px', borderRadius: '8px', cursor: 'pointer',
+                fontWeight: '600', fontSize: '13px', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', gap: '6px'
+              }}
+            >
+              {downloading ? '⏳...' : '📄 Receipt'}
             </button>
           )}
         </div>

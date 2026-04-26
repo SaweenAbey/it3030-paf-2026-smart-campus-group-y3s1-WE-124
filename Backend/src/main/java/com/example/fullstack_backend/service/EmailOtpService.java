@@ -61,6 +61,62 @@ public class EmailOtpService {
         logOtp(username, email, otpCode);
     }
 
+    public void sendForgotPasswordOtp(String username, String email, String otpCode) {
+        if ("smtp".equalsIgnoreCase(emailProvider)) {
+            try {
+                sendForgotPasswordViaSmtp(username, email, otpCode);
+            } catch (IllegalStateException ex) {
+                if (!allowLogFallback) {
+                    throw ex;
+                }
+                logger.warn("SMTP Forgot Password OTP delivery unavailable ({}). Falling back to LOG provider for development.", ex.getMessage());
+                logForgotPasswordOtp(username, email, otpCode);
+            }
+            return;
+        }
+
+        if (!"log".equalsIgnoreCase(emailProvider)) {
+            throw new IllegalStateException("Unsupported OTP email provider: " + emailProvider);
+        }
+
+        if (!allowLogFallback) {
+            throw new IllegalStateException(
+                    "OTP email is in LOG mode. Set OTP_EMAIL_PROVIDER=smtp and configure spring.mail settings");
+        }
+
+        logForgotPasswordOtp(username, email, otpCode);
+    }
+
+    private void sendForgotPasswordViaSmtp(String username, String email, String otpCode) {
+        if (mailSender == null) {
+            throw new IllegalStateException("JavaMailSender is not available. Configure spring.mail.* settings");
+        }
+        validateSmtpConfig();
+        if (isBlank(email)) {
+            throw new IllegalArgumentException("Email is required for password reset");
+        }
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(email.trim());
+        message.setSubject("UNI360 Password Reset OTP");
+        message.setText("Your UNI360 password reset verification code is " + otpCode + ". It expires in 5 minutes.");
+
+        try {
+            mailSender.send(message);
+            logger.info("Forgot password OTP email sent successfully. username={}, email={}", username, maskEmail(email));
+        } catch (MailException ex) {
+            String rootMessage = extractRootCauseMessage(ex);
+            logger.error("Failed to send forgot password OTP email to {}: {}", maskEmail(email), rootMessage);
+            throw new IllegalStateException("Failed to send forgot password OTP email: " + rootMessage, ex);
+        }
+    }
+
+    private void logForgotPasswordOtp(String username, String email, String otpCode) {
+        logger.warn("Forgot Password OTP email provider is LOG mode. No real email will be sent.");
+        logger.info("DEV Forgot Password OTP generated. username={}, email={}, otp={}", username, maskEmail(email), otpCode);
+    }
+
     private void sendViaSmtp(String username, String email, String otpCode) {
         if (mailSender == null) {
             throw new IllegalStateException("JavaMailSender is not available. Configure spring.mail.* settings");

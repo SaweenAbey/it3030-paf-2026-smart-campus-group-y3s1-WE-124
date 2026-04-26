@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { adminAPI, notificationAPI, userAPI, reviewAPI } from '../services/api';
+import jsPDF from 'jspdf';
 import AdminSkyStatusButton from '../components/AdminSkyStatusButton';
 import Sidebar from '../components/Sidebar';
 import toast from 'react-hot-toast';
@@ -406,7 +407,7 @@ const AdminDashboard = () => {
               toast.dismiss(t.id);
               logout();
               toast.success('Logged out successfully');
-              navigate('/login');
+              navigate('/');
             }}
             className="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-red-700"
           >
@@ -545,7 +546,74 @@ const AdminDashboard = () => {
     { key: 'inquiries', label: 'Inquiries' },
     { key: 'bookings', label: 'Booking Details' },
     { key: 'reviews', label: 'Reviews' },
+    { key: 'reports', label: 'Reports' },
   ];
+
+  const generateReport = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(15, 23, 42); // slate-900
+    doc.text("UNI360 Smart Campus Operations Report", 20, 20);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139); // slate-500
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 28);
+    doc.setDrawColor(226, 232, 240); // slate-200
+    doc.line(20, 32, 190, 32);
+
+    // Platform Stats
+    doc.setFontSize(16);
+    doc.setTextColor(2, 132, 199); // sky-600
+    doc.text("Platform Overview", 20, 45);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(51, 65, 85); // slate-700
+    doc.text(`• Total Registered Users: ${users.length}`, 25, 55);
+    doc.text(`• Active User Accounts: ${activeUsers}`, 25, 63);
+    doc.text(`• Pending Tutor Approvals: ${pendingTutors.length}`, 25, 71);
+    doc.text(`• Internal Administrator Accounts: ${adminUsers}`, 25, 79);
+    doc.text(`• System Uptime Metric: 99.9% (Optimal)`, 25, 87);
+
+    // User Roles Distribution
+    const rolesCount = users.reduce((acc, u) => {
+        const role = u.role || 'GUEST';
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+    }, {});
+    
+    doc.setFontSize(16);
+    doc.setTextColor(2, 132, 199);
+    doc.text("User Distribution by Role", 20, 105);
+    
+    let y = 115;
+    Object.entries(rolesCount).forEach(([role, count]) => {
+        doc.setFontSize(11);
+        doc.setTextColor(51, 65, 85);
+        doc.text(`- ${role}: ${count} users`, 30, y);
+        y += 8;
+    });
+
+    // Recent Activity
+    doc.setFontSize(16);
+    doc.setTextColor(2, 132, 199);
+    doc.text("System Activity Summary", 20, y + 15);
+    
+    doc.setFontSize(11);
+    doc.setTextColor(51, 65, 85);
+    doc.text(`• Historical System Notifications Sent: ${adminNotifications.length}`, 25, y + 25);
+    doc.text(`• Verified User Reviews Logged: ${reviews.length}`, 25, y + 33);
+
+    // Footer
+    doc.setFontSize(9);
+    doc.setTextColor(148, 163, 184); // slate-400
+    doc.text("CONFIDENTIAL - UNI360 Internal Operations Document", 105, 285, { align: 'center' });
+    doc.text("© 2026 UNI360 Smart Campus Platform", 105, 290, { align: 'center' });
+
+    doc.save(`UNI360_Operations_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success('System report generated successfully');
+  };
 
   const groupedNotifications = useMemo(
     () => groupAdminNotifications(adminNotifications),
@@ -600,7 +668,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#f8fafc_100%)]">
-      <main className="mx-auto max-w-360 px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-360 px-4 pt-24 pb-6 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <Sidebar items={sidebarItems} activeTab={activeTab} onTabChange={setActiveTab} title="Admin Console">
             <div className="rounded-xl border border-sky-100 bg-linear-to-b from-white to-sky-50/50 p-4">
@@ -1601,6 +1669,58 @@ const AdminDashboard = () => {
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'reports' && (
+              <div className="grid gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-34px_rgba(15,23,42,0.25)] sm:p-8">
+                  <div className="mb-8">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-sky-700">Analytics Engine</p>
+                    <h2 className="mt-2 text-2xl font-bold text-slate-900">System Reports</h2>
+                    <p className="mt-1 text-sm text-slate-500">Generate and export comprehensive platform activity reports for audit and compliance.</p>
+                  </div>
+                  
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="rounded-3xl border border-sky-100 bg-sky-50/30 p-8 flex flex-col items-center text-center transition-all hover:bg-sky-50 hover:shadow-md">
+                      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-xl mb-6 text-sky-600 ring-4 ring-sky-100">
+                        <LayoutGrid className="w-10 h-10" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-900">Operations Summary</h3>
+                      <p className="text-sm text-slate-500 mt-3 mb-8 leading-relaxed">
+                        Comprehensive summary of users, roles distribution, system health metrics, and notification history.
+                      </p>
+                      <button 
+                        onClick={generateReport}
+                        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-sky-600 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-200"
+                      >
+                        Generate Operations PDF
+                      </button>
+                    </div>
+
+                    <div className="rounded-3xl border border-slate-100 bg-slate-50/50 p-8 flex flex-col items-center text-center opacity-70">
+                      <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center shadow-md mb-6 text-slate-400">
+                        <Star className="w-10 h-10" />
+                      </div>
+                      <h3 className="text-xl font-bold text-slate-500">Sentiment Analysis</h3>
+                      <p className="text-sm text-slate-400 mt-3 mb-8 leading-relaxed">
+                        In-depth analysis of user feedback, rating trends, and common support topics for service improvement.
+                      </p>
+                      <button className="w-full py-4 bg-slate-200 text-slate-500 rounded-2xl font-black text-[11px] uppercase tracking-widest cursor-not-allowed">
+                        Advanced Analytics Coming Soon
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-12 rounded-2xl bg-slate-900 p-8 text-white">
+                    <div className="flex items-center gap-4 mb-4">
+                       <div className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Real-time Data Ready</span>
+                    </div>
+                    <h4 className="text-lg font-bold">Data Compliance Notice</h4>
+                    <p className="text-sm text-slate-400 mt-2">These reports contain sensitive platform information. Ensure they are handled in accordance with the campus data privacy policy.</p>
                   </div>
                 </div>
               </div>

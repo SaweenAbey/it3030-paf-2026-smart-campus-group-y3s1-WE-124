@@ -23,7 +23,7 @@ const Support = () => {
   const { isAuthenticated } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_90%_10%,#dbeafe,transparent_28%),radial-gradient(circle_at_0%_100%,#cffafe,transparent_32%),#f8fafc] px-4 pb-20 pt-10 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_90%_10%,#dbeafe,transparent_28%),radial-gradient(circle_at_0%_100%,#cffafe,transparent_32%),#f8fafc] px-4 pb-20 pt-24 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_30px_90px_-50px_rgba(2,132,199,0.5)]">
           <div className="bg-gradient-to-r from-slate-900 via-sky-900 to-slate-900 px-7 py-10 sm:px-10">

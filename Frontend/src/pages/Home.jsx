@@ -41,24 +41,24 @@ const CheckCircle2 = ({ className }) => (
 );
 
 const GlowingBackground = () => (
-  <div className="fixed inset-0 pointer-events-none z-0">
+  <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
     <motion.div 
       animate={{ 
-        scale: [1, 1.2, 1],
-        rotate: [0, 90, 0],
-        opacity: [0.3, 0.5, 0.3]
+        scale: [1, 1.1, 1],
+        opacity: [0.3, 0.4, 0.3]
       }}
-      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-      className="absolute top-[-20%] left-[-10%] w-[80vw] h-[80vw] bg-sky-400/20 blur-[140px] rounded-full"
+      transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+      style={{ willChange: 'transform, opacity' }}
+      className="absolute top-[-20%] left-[-10%] w-[80vw] h-[80vw] bg-sky-400/15 blur-[120px] rounded-full"
     />
     <motion.div 
       animate={{ 
-        scale: [1.2, 1, 1.2],
-        rotate: [90, 0, 90],
-        opacity: [0.2, 0.4, 0.2]
+        scale: [1.1, 1, 1.1],
+        opacity: [0.2, 0.3, 0.2]
       }}
-      transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-      className="absolute bottom-[-10%] right-[-10%] w-[70vw] h-[70vw] bg-indigo-500/10 blur-[140px] rounded-full"
+      transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+      style={{ willChange: 'transform, opacity' }}
+      className="absolute bottom-[-10%] right-[-10%] w-[70vw] h-[70vw] bg-indigo-500/10 blur-[120px] rounded-full"
     />
   </div>
 );
@@ -122,10 +122,8 @@ const Home = () => {
   const [reviews, setReviews] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
 
-  const { scrollYProgress } = useScroll();
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
-  
-  const bgColor = useTransform(smoothProgress, [0, 0.3, 0.6, 0.9], ["#FAFAFA", "#EEF2FF", "#F0FDFA", "#FAFAFA"]);
+  // Performance optimization: Removed expensive backgroundColor transform
+  // const bgColor = useTransform(smoothProgress, [0, 0.3, 0.6, 0.9], ["#FAFAFA", "#EEF2FF", "#F0FDFA", "#FAFAFA"]);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -140,10 +138,9 @@ const Home = () => {
   }, []);
 
   return (
-    <motion.div 
+    <div 
       ref={containerRef} 
-      style={{ backgroundColor: bgColor }}
-      className="relative min-h-screen font-sans selection:bg-sky-200 transition-colors duration-1000"
+      className="relative min-h-screen bg-slate-50 font-sans selection:bg-sky-200"
     >
       <GlowingBackground />
 
@@ -215,7 +212,12 @@ const Home = () => {
                 className="absolute inset-0 bg-slate-900 overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)]"
                 style={{ clipPath: 'polygon(10% 0, 100% 0, 100% 90%, 0 100%, 0 10%)' }}
               >
-                <img src={sliitImg} alt="Hero" className="w-full h-full object-cover opacity-60 hover:scale-110 transition-transform duration-[10s]" />
+                <img 
+                  src={sliitImg} 
+                  alt="Hero" 
+                  style={{ willChange: 'transform' }}
+                  className="w-full h-full object-cover opacity-60 hover:scale-110 transition-transform duration-[10s]" 
+                />
                 <div className="absolute inset-0 bg-gradient-to-br from-sky-500/20 to-indigo-600/30" />
                 
                 <div className="absolute top-10 left-10 right-10">
@@ -326,7 +328,7 @@ const Home = () => {
                   key={idx}
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
+                  viewport={{ once: true, margin: "-50px" }}
                   transition={{ delay: idx * 0.1 }}
                   className="flex gap-6 group"
                 >
@@ -348,7 +350,12 @@ const Home = () => {
               className="relative z-10 rounded-[3rem] border border-white/20 bg-white/5 p-4 backdrop-blur-md shadow-2xl"
             >
               <div className="rounded-[2.2rem] overflow-hidden bg-slate-800 aspect-video group">
-                <img src={sliitLibAltImg} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[15s]" alt="" />
+                <img 
+                  src={sliitLibAltImg} 
+                  style={{ willChange: 'transform' }}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[15s]" 
+                  alt="" 
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
                 <div className="absolute bottom-10 left-10">
                   <div className="text-white text-3xl font-black italic">UI/UX v3.0</div>
@@ -375,6 +382,7 @@ const Home = () => {
                 key={review.id}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
                 transition={{ delay: (i % 3) * 0.1 }}
                 className="break-inside-avoid p-8 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm hover:shadow-2xl transition-all duration-500 group"
               >
@@ -410,6 +418,7 @@ const Home = () => {
             <motion.h2 
               initial={{ scale: 0.9, opacity: 0 }}
               whileInView={{ scale: 1, opacity: 1 }}
+              viewport={{ once: true }}
               className="text-5xl sm:text-8xl font-black text-white tracking-tighter leading-[0.8] mb-12 uppercase italic"
             >
               Future Proof <br />
@@ -444,7 +453,7 @@ const Home = () => {
         </motion.div>
       </div>
 
-    </motion.div>
+    </div>
   );
 };
 

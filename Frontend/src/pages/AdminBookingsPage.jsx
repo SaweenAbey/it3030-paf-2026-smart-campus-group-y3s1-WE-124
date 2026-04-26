@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { getAllBookings, approveBooking, rejectBooking, cancelBooking } from '../api/bookingApi';
+import { bookingAPI } from '../services/api';
 import BookingCard from '../components/BookingCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -27,7 +27,7 @@ export default function AdminBookingsPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const res = await getAllBookings();
+      const res = await bookingAPI.getAllBookings();
       setBookings(res.data || []);
     } catch (e) {
       console.error(e);
@@ -44,7 +44,7 @@ export default function AdminBookingsPage() {
   const handleApprove = async (id) => {
     if (!window.confirm('Approve this reservation?')) return;
     try {
-      await approveBooking(id);
+      await bookingAPI.approveBooking(id);
       toast.success('Reservation approved');
       fetchAll();
     } catch (e) {
@@ -56,7 +56,7 @@ export default function AdminBookingsPage() {
     const reason = window.prompt('Enter rejection reason (required):');
     if (reason && reason.trim()) {
       try {
-        await rejectBooking(id, reason);
+        await bookingAPI.rejectBooking(id, reason);
         toast.success('Reservation rejected');
         fetchAll();
       } catch (e) {
@@ -68,7 +68,7 @@ export default function AdminBookingsPage() {
   const handleCancel = async (id) => {
     if (!window.confirm('Cancel this approved reservation? This will free up the time slot.')) return;
     try {
-      await cancelBooking(id);
+      await bookingAPI.cancelBooking(id);
       toast.success('Reservation cancelled');
       fetchAll();
     } catch (e) {

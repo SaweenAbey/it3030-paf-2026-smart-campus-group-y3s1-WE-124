@@ -132,6 +132,12 @@ public class User implements UserDetails {
     @Column(name = "last_otp_requested_at")
     private LocalDateTime lastOtpRequestedAt;
 
+    @Column(name = "reset_password_otp", length = 10)
+    private String resetPasswordOtp;
+
+    @Column(name = "reset_password_otp_expires_at")
+    private LocalDateTime resetPasswordOtpExpiresAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
