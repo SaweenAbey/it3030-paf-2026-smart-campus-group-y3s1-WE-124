@@ -275,11 +275,11 @@ export default function ResourceDetailsPage() {
     e.preventDefault();
 
     const now = new Date();
-    const start = new Date(bookingForm.startTime);
-    const end = new Date(bookingForm.endTime);
+    const start = bookingForm.startTime ? new Date(bookingForm.startTime) : null;
+    const end = bookingForm.endTime ? new Date(bookingForm.endTime) : null;
 
-    if (!bookingForm.startTime || !bookingForm.endTime || !bookingForm.purpose) {
-      toast.error('Please select time slots and fill required fields');
+    if (!start || !end) {
+      toast.error('Please select a time slot on the timeline');
       return;
     }
 
@@ -293,16 +293,24 @@ export default function ResourceDetailsPage() {
       return;
     }
 
-    // Minimum booking duration check (e.g., 15 minutes)
-    const durationMs = end - start;
-    const durationMins = durationMs / (1000 * 60);
-    if (durationMins < 15) {
-      toast.error('Minimum booking duration is 15 minutes');
+    if (!bookingForm.purpose || bookingForm.purpose.trim().length < 5) {
+      toast.error('Please provide a valid purpose (minimum 5 characters)');
       return;
     }
 
-    if (bookingForm.expectedAttendees && parseInt(bookingForm.expectedAttendees) > resource.capacity) {
-      toast.error(`Capacity exceeded. Maximum allowed: ${resource.capacity}`);
+    if (!bookingForm.expectedAttendees) {
+      toast.error('Please specify the expected number of attendees');
+      return;
+    }
+
+    const attendees = parseInt(bookingForm.expectedAttendees);
+    if (isNaN(attendees) || attendees <= 0) {
+      toast.error('Expected size must be a positive number');
+      return;
+    }
+
+    if (attendees > resource.capacity) {
+      toast.error(`Capacity exceeded. Maximum allowed for this resource: ${resource.capacity}`);
       return;
     }
 
@@ -644,9 +652,21 @@ export default function ResourceDetailsPage() {
                             <input
                               type="number"
                               name="expectedAttendees"
+                              min="1"
                               max={resource.capacity}
                               value={bookingForm.expectedAttendees}
-                              onChange={handleBookingChange}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (val < 0) {
+                                  toast.error('Negative values are not allowed');
+                                  return;
+                                }
+                                if (val > resource.capacity) {
+                                  toast.error(`Maximum capacity is ${resource.capacity}`);
+                                  return;
+                                }
+                                handleBookingChange(e);
+                              }}
                               className="w-full px-5 py-4 bg-slate-50/50 border border-slate-100 rounded-xl text-slate-900 text-sm font-black focus:bg-white focus:ring-4 focus:ring-sky-500/5 focus:border-sky-500 transition-all outline-none"
                               placeholder={`Max ${resource.capacity}`}
                             />
