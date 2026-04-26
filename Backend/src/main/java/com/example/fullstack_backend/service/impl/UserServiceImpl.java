@@ -143,18 +143,6 @@ public class UserServiceImpl implements UserService {
             message = "User registered successfully";
         }
 
-        // Notify Admins about new registration
-        try {
-            BroadcastNotificationRequest adminNotif = BroadcastNotificationRequest.builder()
-                    .title("👤 New Registration Request")
-                    .message("User " + savedUser.getName() + " (" + savedUser.getUsername() + ") has registered as a " + savedUser.getRole() + ". Approval may be required.")
-                    .type(NotificationType.INFO)
-                    .actionUrl("/admin/dashboard?tab=users")
-                    .build();
-            notificationService.createForRole(Role.ADMIN, savedUser.getUsername(), adminNotif);
-        } catch (Exception e) {
-            logger.warn("Failed to send admin notification for registration: {}", e.getMessage());
-        }
 
         return AuthResponse.builder()
                 .token(token)
@@ -408,18 +396,6 @@ public class UserServiceImpl implements UserService {
         String token = jwtUtil.generateToken(user);
         logger.info("OTP verified. Login completed for user: {}", user.getUsername());
 
-        // Notify Admins about user login
-        try {
-            BroadcastNotificationRequest adminNotif = BroadcastNotificationRequest.builder()
-                    .title("🔑 User Logged In")
-                    .message(user.getName() + " (" + user.getUsername() + ") has logged into the system.")
-                    .type(NotificationType.INFO)
-                    .actionUrl("/admin/dashboard?tab=overview")
-                    .build();
-            notificationService.createForRole(Role.ADMIN, user.getUsername(), adminNotif);
-        } catch (Exception e) {
-            logger.warn("Failed to send admin notification for login: {}", e.getMessage());
-        }
 
         return AuthResponse.builder()
                 .token(token)
@@ -467,18 +443,6 @@ public class UserServiceImpl implements UserService {
 
         String token = jwtUtil.generateToken(savedUser);
 
-        // Notify Admins about Google login
-        try {
-            BroadcastNotificationRequest adminNotif = BroadcastNotificationRequest.builder()
-                    .title("🔑 Google Login")
-                    .message(savedUser.getName() + " (" + savedUser.getUsername() + ") logged in via Google.")
-                    .type(NotificationType.INFO)
-                    .actionUrl("/admin/dashboard?tab=overview")
-                    .build();
-            notificationService.createForRole(Role.ADMIN, savedUser.getUsername(), adminNotif);
-        } catch (Exception e) {
-            logger.warn("Failed to send admin notification for Google login: {}", e.getMessage());
-        }
 
         return AuthResponse.builder()
                 .token(token)
