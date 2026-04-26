@@ -445,6 +445,31 @@ const ManagerDashboard = () => {
     }
   };
 
+  const handleDeleteResource = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
+    try {
+      await resourceAPI.remove(id);
+      toast.success('Resource deleted successfully');
+      fetchResources();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete resource');
+    }
+  };
+
+  const handleToggleResourceStatus = async (resource) => {
+    const newStatus = resource.status === 'ACTIVE' ? 'OUT_OF_SERVICE' : 'ACTIVE';
+    try {
+      await resourceAPI.update(resource.id, {
+        ...resource,
+        status: newStatus
+      });
+      toast.success(`Resource status updated to ${newStatus.replace(/_/g, ' ')}`);
+      fetchResources();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    }
+  };
+
   const sidebarItems = [
     { key: 'overview', label: 'Overview' },
     { key: 'booking-requests', label: 'Booking Requests' },
@@ -909,16 +934,18 @@ const ManagerDashboard = () => {
 
                           {/* Status Cell */}
                           <td className="px-6 py-5">
-                            <span
-                              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] shadow-sm ${
+                            <button
+                              onClick={() => handleToggleResourceStatus(resource)}
+                              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] shadow-sm transition-all hover:scale-105 active:scale-95 ${
                                 resource.status === 'ACTIVE'
-                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                  : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100'
+                                  : 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100'
                               }`}
+                              title={`Click to ${resource.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}`}
                             >
-                              <div className={`h-1.5 w-1.5 rounded-full ${resource.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
+                              <div className={`h-1.5 w-1.5 rounded-full ${resource.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'} ${resource.status === 'ACTIVE' ? 'animate-pulse' : ''}`}></div>
                               {resource.status?.replace(/_/g, ' ') || 'ACTIVE'}
-                            </span>
+                            </button>
                           </td>
 
                           {/* Actions Cell */}
@@ -932,12 +959,19 @@ const ManagerDashboard = () => {
                                    <ExternalLink className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
                                 </button>
                                 <button 
-                                  onClick={() => handleEditResource(resource)}
-                                  className="h-10 w-10 flex items-center justify-center bg-slate-900 rounded-xl text-white hover:bg-sky-600 hover:shadow-xl hover:shadow-sky-100 transition-all duration-300 group/btn"
-                                  title="Edit Resource"
-                                >
-                                   <Edit2 className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
-                                </button>
+                                   onClick={() => handleEditResource(resource)}
+                                   className="h-10 w-10 flex items-center justify-center bg-slate-900 rounded-xl text-white hover:bg-sky-600 hover:shadow-xl hover:shadow-sky-100 transition-all duration-300 group/btn"
+                                   title="Edit Resource"
+                                 >
+                                    <Edit2 className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
+                                 </button>
+                                 <button 
+                                   onClick={() => handleDeleteResource(resource.id)}
+                                   className="h-10 w-10 flex items-center justify-center bg-rose-50 rounded-xl text-rose-500 hover:bg-rose-600 hover:text-white hover:shadow-xl hover:shadow-rose-100 transition-all duration-300 group/btn"
+                                   title="Delete Resource"
+                                 >
+                                    <Trash2 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                 </button>
                              </div>
                           </td>
                         </tr>
