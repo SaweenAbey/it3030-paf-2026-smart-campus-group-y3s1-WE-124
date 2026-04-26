@@ -54,7 +54,7 @@ const ReviewsPage = () => {
   }, [reviews, filterRating, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#f0f9ff,transparent_40%),#f8fafc] pb-20 pt-10">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#f0f9ff,transparent_40%),#f8fafc] pb-20 pt-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         
         {/* Header Section */}

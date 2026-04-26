@@ -104,6 +104,16 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
+  const forgotPassword = async (data) => {
+    const response = await authAPI.forgotPassword(data);
+    return response.data;
+  };
+
+  const resetPassword = async (data) => {
+    const response = await authAPI.resetPassword(data);
+    return response.data;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -118,6 +128,8 @@ export const AuthProvider = ({ children }) => {
         updateUserProfileImage,
         deleteUserProfileImage,
         updateUser,
+        forgotPassword,
+        resetPassword,
       }}
     >
       {children}

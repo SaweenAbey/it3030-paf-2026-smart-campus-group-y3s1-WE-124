@@ -271,7 +271,7 @@ const TeacherDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-cyan-50/30 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-cyan-50/30 px-4 pt-24 pb-6 sm:px-6 lg:px-8">
       <div className="max-w-[1440px] mx-auto">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <Sidebar items={sidebarItems} title="Teacher Hub">

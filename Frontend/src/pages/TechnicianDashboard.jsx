@@ -515,7 +515,7 @@ const TechnicianDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 sm:px-6 py-6">
+    <div className="min-h-screen bg-slate-50 px-4 pt-24 pb-6 sm:px-6">
       <div className="max-w-7xl mx-auto">
         <div className="rounded-3xl bg-gradient-to-r from-emerald-500 to-teal-400 p-6 md:p-8 text-white shadow-2xl mb-6">
           <div className="inline-block px-3 py-1 rounded-full bg-white/20 text-xs tracking-wider uppercase mb-4">

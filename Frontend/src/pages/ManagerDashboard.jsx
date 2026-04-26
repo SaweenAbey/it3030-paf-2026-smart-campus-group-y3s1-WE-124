@@ -445,6 +445,31 @@ const ManagerDashboard = () => {
     }
   };
 
+  const handleDeleteResource = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
+    try {
+      await resourceAPI.remove(id);
+      toast.success('Resource deleted successfully');
+      fetchResources();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to delete resource');
+    }
+  };
+
+  const handleToggleResourceStatus = async (resource) => {
+    const newStatus = resource.status === 'ACTIVE' ? 'OUT_OF_SERVICE' : 'ACTIVE';
+    try {
+      await resourceAPI.update(resource.id, {
+        ...resource,
+        status: newStatus
+      });
+      toast.success(`Resource status updated to ${newStatus.replace(/_/g, ' ')}`);
+      fetchResources();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update status');
+    }
+  };
+
   const sidebarItems = [
     { key: 'overview', label: 'Overview' },
     { key: 'booking-requests', label: 'Booking Requests' },
@@ -468,7 +493,7 @@ const ManagerDashboard = () => {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#f8fafc_100%)] px-4 py-6">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.04),transparent_40%),linear-gradient(180deg,#f8fafc_0%,#ffffff_44%,#f8fafc_100%)] px-4 pt-24 pb-6">
       <div className="mx-auto max-w-360">
         <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
           <Sidebar items={sidebarItems} activeTab={activeTab} onTabChange={setActiveTab} title="Manager Console">
@@ -909,16 +934,18 @@ const ManagerDashboard = () => {
 
                           {/* Status Cell */}
                           <td className="px-6 py-5">
-                            <span
-                              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] shadow-sm ${
+                            <button
+                              onClick={() => handleToggleResourceStatus(resource)}
+                              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.1em] shadow-sm transition-all hover:scale-105 active:scale-95 ${
                                 resource.status === 'ACTIVE'
-                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                                  : 'bg-rose-50 text-rose-600 border border-rose-100'
+                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100'
+                                  : 'bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100'
                               }`}
+                              title={`Click to ${resource.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}`}
                             >
-                              <div className={`h-1.5 w-1.5 rounded-full ${resource.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'} animate-pulse`}></div>
+                              <div className={`h-1.5 w-1.5 rounded-full ${resource.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'} ${resource.status === 'ACTIVE' ? 'animate-pulse' : ''}`}></div>
                               {resource.status?.replace(/_/g, ' ') || 'ACTIVE'}
-                            </span>
+                            </button>
                           </td>
 
                           {/* Actions Cell */}
@@ -932,12 +959,19 @@ const ManagerDashboard = () => {
                                    <ExternalLink className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
                                 </button>
                                 <button 
-                                  onClick={() => handleEditResource(resource)}
-                                  className="h-10 w-10 flex items-center justify-center bg-slate-900 rounded-xl text-white hover:bg-sky-600 hover:shadow-xl hover:shadow-sky-100 transition-all duration-300 group/btn"
-                                  title="Edit Resource"
-                                >
-                                   <Edit2 className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
-                                </button>
+                                   onClick={() => handleEditResource(resource)}
+                                   className="h-10 w-10 flex items-center justify-center bg-slate-900 rounded-xl text-white hover:bg-sky-600 hover:shadow-xl hover:shadow-sky-100 transition-all duration-300 group/btn"
+                                   title="Edit Resource"
+                                 >
+                                    <Edit2 className="w-4 h-4 group-hover/btn:rotate-12 transition-transform" />
+                                 </button>
+                                 <button 
+                                   onClick={() => handleDeleteResource(resource.id)}
+                                   className="h-10 w-10 flex items-center justify-center bg-rose-50 rounded-xl text-rose-500 hover:bg-rose-600 hover:text-white hover:shadow-xl hover:shadow-rose-100 transition-all duration-300 group/btn"
+                                   title="Delete Resource"
+                                 >
+                                    <Trash2 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                 </button>
                              </div>
                           </td>
                         </tr>
@@ -1142,6 +1176,19 @@ const ManagerDashboard = () => {
                                         value={resourceForm.availabilityEndTime}
                                         onChange={handleResourceFieldChange}
                                         className="w-full rounded-2xl border-2 border-white/10 bg-white/5 px-6 py-4 text-base font-black text-white focus:bg-white/10 focus:border-rose-400 focus:outline-none transition-all"
+                                      />
+                                   </div>
+                                   <div className="space-y-4 sm:col-span-2">
+                                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                         <Clock className="w-3.5 h-3.5 text-sky-400" /> Max Duration (Minutes)
+                                      </label>
+                                      <input
+                                        type="number"
+                                        name="availabilityDurationMinutes"
+                                        value={resourceForm.availabilityDurationMinutes}
+                                        onChange={handleResourceFieldChange}
+                                        placeholder="e.g. 60"
+                                        className="w-full rounded-2xl border-2 border-white/10 bg-white/5 px-6 py-4 text-base font-black text-white focus:bg-white/10 focus:border-sky-400 focus:outline-none transition-all"
                                       />
                                    </div>
                                 </div>
